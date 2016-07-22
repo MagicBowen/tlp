@@ -11,10 +11,10 @@
 #include <tlp/algo/Unique.h>
 #include <tlp/algo/Replace.h>
 #include <tlp/algo/ReplaceAll.h>
-#include <tlp/algo/Filter.h>
-#include <tlp/algo/Map.h>
 #include <tlp/algo/Any.h>
 #include <tlp/algo/All.h>
+#include <tlp/algo/Filter.h>
+#include <tlp/algo/Map.h>
 
 using tlp::IntType;
 
