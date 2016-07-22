@@ -2,6 +2,8 @@
 #include <tlp/base/IntType.h>
 #include <tlp/list/TypeList.h>
 #include <tlp/utils/IsEqual.h>
+#include <tlp/utils/IfThenElse.h>
+#include <tlp/utils/Inherits.h>
 #include <tlp/algo/Length.h>
 #include <tlp/algo/IndexOf.h>
 #include <tlp/algo/TypeAt.h>
@@ -15,7 +17,11 @@
 #include <tlp/algo/All.h>
 #include <tlp/algo/Filter.h>
 #include <tlp/algo/Map.h>
+#include <tlp/algo/Fold.h>
+#include <tlp/algo/Sort.h>
 
+using tlp::IfThenElse;
+using tlp::Inherits;
 using tlp::IntType;
 
 USING_CUM_NS
@@ -139,5 +145,50 @@ FIXTURE(TestTypeList)
         using Expected = TYPE_LIST(IntType<4>, IntType<1>, IntType<2>, IntType<8>);
 
         ASSERT_THAT(IS_EQUAL(List, Expected), be_true());
+    }
+
+    template<typename T, typename U>
+    struct SumSize { using Result = IntType<T::Value + sizeof(U)>; };
+
+    TEST("fold the list")
+    {
+        using List = TYPE_LIST(int, char, long);
+        using Result = FOLD(List, IntType<0>, SumSize);
+
+        ASSERT_THAT(Result::Value, eq(13));
+    }
+
+    template<typename T, typename U>
+    struct SizeLarger
+    {
+        using Result = typename IfThenElse<(sizeof(T) > sizeof(U)), T, U>::Result;
+    };
+
+    TEST("sort a list by type size")
+    {
+        using List = TYPE_LIST(char, long, short, long, int);
+        using Expected = TYPE_LIST(long, long, int, short, char);
+
+        ASSERT_THAT(IS_EQUAL(SORT(List, SizeLarger), Expected), be_true());
+    }
+
+    struct Base{};
+    struct Leaf1 : Base {};
+    struct Branch : Base {};
+    struct Leaf2 : Branch {};
+    struct Leaf3 : Branch {};
+
+    template<typename T, typename U>
+    struct TypeUpper
+    {
+        using Result = typename IfThenElse<Inherits<T, U>::Value, T, U>::Result;
+    };
+
+    TEST("sort a list by type inherit relationship")
+    {
+        using List = TYPE_LIST(Branch, Leaf2, Base, Leaf3, Leaf1);
+        using Expected = TYPE_LIST(Base, Branch, Leaf2, Leaf3, Leaf1);
+
+        ASSERT_THAT(IS_EQUAL(SORT(List, TypeUpper), Expected), be_true());
     }
 };

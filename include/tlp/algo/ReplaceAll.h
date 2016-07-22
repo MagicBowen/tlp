@@ -13,12 +13,6 @@ struct ReplaceAll<NullType, T, U>
     using Result = NullType;
 };
 
-template<typename TL, typename T>
-struct ReplaceAll<TL, T, T>
-{
-    using Result = TL;
-};
-
 template<typename Tail, typename T, typename U>
 struct ReplaceAll<TypeElem<T, Tail>, T, U>
 {

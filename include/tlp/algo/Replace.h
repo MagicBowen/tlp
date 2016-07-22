@@ -14,12 +14,6 @@ struct Replace<NullType, T, U>
     using Result = NullType;
 };
 
-template<typename TL, typename T>
-struct Replace<TL, T, T>
-{
-    using Result = TL;
-};
-
 template<typename Tail, typename T, typename U>
 struct Replace<TypeElem<T, Tail>, T, U>
 {
