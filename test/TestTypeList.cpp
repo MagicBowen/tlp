@@ -8,6 +8,8 @@
 #include <tlp/algo/Erase.h>
 #include <tlp/algo/EraseAll.h>
 #include <tlp/algo/Unique.h>
+#include <tlp/algo/Replace.h>
+#include <tlp/algo/ReplaceAll.h>
 
 USING_CUM_NS
 
@@ -72,6 +74,22 @@ FIXTURE(TestTypeList)
     {
         using List1 = TYPE_LIST(short, int, long);
         using List2 = UNIQUE(TYPE_LIST(short, int, short, int, long, short, long));
+
+        ASSERT_THAT(IS_EQUAL(List1, List2), be_true());
+    }
+
+    TEST("replace type in a list")
+    {
+        using List1 = TYPE_LIST(int, int, long, short);
+        using List2 = REPLACE(TYPE_LIST(int, short, long, short), short, int);
+
+        ASSERT_THAT(IS_EQUAL(List1, List2), be_true());
+    }
+
+    TEST("replace all the same type in a list")
+    {
+        using List1 = TYPE_LIST(int, int, long, int);
+        using List2 = REPLACE_ALL(TYPE_LIST(int, short, long, short), short, int);
 
         ASSERT_THAT(IS_EQUAL(List1, List2), be_true());
     }
