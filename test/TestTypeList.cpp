@@ -1,4 +1,5 @@
 #include <cut/cut.hpp>
+#include <tlp/base/IntType.h>
 #include <tlp/list/TypeList.h>
 #include <tlp/utils/IsEqual.h>
 #include <tlp/algo/Length.h>
@@ -12,7 +13,8 @@
 #include <tlp/algo/ReplaceAll.h>
 #include <tlp/algo/Filter.h>
 #include <tlp/algo/Map.h>
-#include <tlp/base/IntType.h>
+#include <tlp/algo/Any.h>
+#include <tlp/algo/All.h>
 
 using tlp::IntType;
 
@@ -100,6 +102,26 @@ FIXTURE(TestTypeList)
     }
 
     template<typename T> struct LargerThan2Bytes{ enum { Value = sizeof(T) > 2 }; };
+
+    TEST("any one of the list satisfied prediction")
+    {
+        ASSERT_THAT(ANY(TYPE_LIST(char, short, int), LargerThan2Bytes), be_true());
+    }
+
+    TEST("none of the list satisfied prediction")
+    {
+        ASSERT_THAT(ANY(TYPE_LIST(char, short), LargerThan2Bytes), be_false());
+    }
+
+    TEST("all of the list satisfied prediction")
+    {
+        ASSERT_THAT(ALL(TYPE_LIST(int, long), LargerThan2Bytes), be_true());
+    }
+
+    TEST("any of the type in list not satisfied prediction")
+    {
+        ASSERT_THAT(ALL(TYPE_LIST(int, long, short), LargerThan2Bytes), be_false());
+    }
 
     TEST("filter the list")
     {

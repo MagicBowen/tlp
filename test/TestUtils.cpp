@@ -1,5 +1,6 @@
 #include <cut/cut.hpp>
 #include <tlp/utils/IsEqual.h>
+#include <tlp/utils/Not.h>
 #include <tlp/utils/IfThenElse.h>
 #include <tlp/utils/Convertible.h>
 #include <tlp/utils/Inherits.h>
@@ -16,6 +17,13 @@ FIXTURE(TestUtils)
     TEST("compare types unequal")
     {
         ASSERT_THAT(IS_EQUAL(int, short), be_false());
+    }
+
+    template<typename T> struct Pred { enum { Value = true }; };
+
+    TEST("opposite of a prediction")
+    {
+        ASSERT_THAT(TLP_NS::Not<Pred>::Result<int>::Value, be_false());
     }
 
     TEST("select the true branch")
