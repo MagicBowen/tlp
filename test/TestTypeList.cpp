@@ -10,6 +10,11 @@
 #include <tlp/algo/Unique.h>
 #include <tlp/algo/Replace.h>
 #include <tlp/algo/ReplaceAll.h>
+#include <tlp/algo/Filter.h>
+#include <tlp/algo/Map.h>
+#include <tlp/base/IntType.h>
+
+using tlp::IntType;
 
 USING_CUM_NS
 
@@ -48,49 +53,69 @@ FIXTURE(TestTypeList)
 
     TEST("append a type to a list")
     {
-        using List1 = TYPE_LIST(int, short, long);
-        using List2 = APPEND(TYPE_LIST(int, short), long);
+        using List = APPEND(TYPE_LIST(int, short), long);
+        using Expected = TYPE_LIST(int, short, long);
 
-        ASSERT_THAT(IS_EQUAL(List1, List2), be_true());
+        ASSERT_THAT(IS_EQUAL(List, Expected), be_true());
     }
 
     TEST("erase a type from a list")
     {
-        using List1 = TYPE_LIST(int, long);
-        using List2 = ERASE(TYPE_LIST(int, short, long), short);
+        using List = ERASE(TYPE_LIST(int, short, long), short);
+        using Expected = TYPE_LIST(int, long);
 
-        ASSERT_THAT(IS_EQUAL(List1, List2), be_true());
+        ASSERT_THAT(IS_EQUAL(List, Expected), be_true());
     }
 
     TEST("erase all the same type from a list")
     {
-        using List1 = TYPE_LIST(int, long);
-        using List2 = ERASE_ALL(TYPE_LIST(short, int, short, long, short), short);
+        using List = ERASE_ALL(TYPE_LIST(short, int, short, long, short), short);
+        using Expected = TYPE_LIST(int, long);
 
-        ASSERT_THAT(IS_EQUAL(List1, List2), be_true());
+        ASSERT_THAT(IS_EQUAL(List, Expected), be_true());
     }
 
     TEST("remove all the duplicated type from a list")
     {
-        using List1 = TYPE_LIST(short, int, long);
-        using List2 = UNIQUE(TYPE_LIST(short, int, short, int, long, short, long));
+        using List = UNIQUE(TYPE_LIST(short, int, short, int, long, short, long));
+        using Expected = TYPE_LIST(short, int, long);
 
-        ASSERT_THAT(IS_EQUAL(List1, List2), be_true());
+        ASSERT_THAT(IS_EQUAL(List, Expected), be_true());
     }
 
     TEST("replace type in a list")
     {
-        using List1 = TYPE_LIST(int, int, long, short);
-        using List2 = REPLACE(TYPE_LIST(int, short, long, short), short, int);
+        using List = REPLACE(TYPE_LIST(int, short, long, short), short, int);
+        using Expected = TYPE_LIST(int, int, long, short);
 
-        ASSERT_THAT(IS_EQUAL(List1, List2), be_true());
+        ASSERT_THAT(IS_EQUAL(List, Expected), be_true());
     }
 
     TEST("replace all the same type in a list")
     {
-        using List1 = TYPE_LIST(int, int, long, int);
-        using List2 = REPLACE_ALL(TYPE_LIST(int, short, long, short), short, int);
+        using List = REPLACE_ALL(TYPE_LIST(int, short, long, short), short, int);
+        using Expected = TYPE_LIST(int, int, long, int);
 
-        ASSERT_THAT(IS_EQUAL(List1, List2), be_true());
+        ASSERT_THAT(IS_EQUAL(List, Expected), be_true());
+    }
+
+    template<typename T> struct LargerThan2Bytes{ enum { Value = sizeof(T) > 2 }; };
+
+    TEST("filter the list")
+    {
+        using List = FILTER(TYPE_LIST(int, char, short, long), LargerThan2Bytes);
+        using Expected = TYPE_LIST(int, long);
+
+        ASSERT_THAT(IS_EQUAL(List, Expected), be_true());
+    }
+
+    template<typename T> struct TypeSize { using Result = IntType<sizeof(T)>; };
+
+    TEST("map the list")
+    {
+        using List = MAP(TYPE_LIST(int, char, short, long), TypeSize);
+        using Expected = TYPE_LIST(IntType<4>, IntType<1>, IntType<2>, IntType<8>);
+
+        ASSERT_THAT(IS_EQUAL(List, Expected), be_true());
     }
 };
