@@ -1,6 +1,6 @@
 #include <cut/cut.hpp>
-#include <tlp/core/TypeList.h>
-#include <tlp/algo/IsEqual.h>
+#include <tlp/list/TypeList.h>
+#include <tlp/utils/IsEqual.h>
 #include <tlp/algo/Length.h>
 #include <tlp/algo/IndexOf.h>
 #include <tlp/algo/TypeAt.h>

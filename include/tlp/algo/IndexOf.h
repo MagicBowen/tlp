@@ -1,8 +1,8 @@
 #ifndef HD43494FD_A0F6_4B05_8E55_E154B9F49A78
 #define HD43494FD_A0F6_4B05_8E55_E154B9F49A78
 
-#include <tlp/core/NullType.h>
-#include <tlp/core/TypeElem.h>
+#include <tlp/base/NullType.h>
+#include <tlp/list/TypeElem.h>
 
 TLP_NS_BEGIN
 

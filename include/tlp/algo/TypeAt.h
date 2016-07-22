@@ -1,7 +1,7 @@
 #ifndef H3E904CF8_07E3_4046_983D_13484B3DB98B
 #define H3E904CF8_07E3_4046_983D_13484B3DB98B
 
-#include <tlp/core/TypeElem.h>
+#include <tlp/list/TypeElem.h>
 
 TLP_NS_BEGIN
 

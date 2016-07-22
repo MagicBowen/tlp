@@ -1,8 +1,8 @@
 #ifndef H786B59C9_447B_4575_AA49_431F969DC9B5
 #define H786B59C9_447B_4575_AA49_431F969DC9B5
 
-#include <tlp/core/NullType.h>
-#include <tlp/core/TypeElem.h>
+#include <tlp/base/NullType.h>
+#include <tlp/list/TypeElem.h>
 
 TLP_NS_BEGIN
 

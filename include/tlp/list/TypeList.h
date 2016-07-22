@@ -1,8 +1,8 @@
 #ifndef HF8EC3192_BE24_490A_A92A_636741798977
 #define HF8EC3192_BE24_490A_A92A_636741798977
 
-#include <tlp/core/NullType.h>
-#include <tlp/core/TypeElem.h>
+#include <tlp/base/NullType.h>
+#include <tlp/list/TypeElem.h>
 
 TLP_NS_BEGIN
 
