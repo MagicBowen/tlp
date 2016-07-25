@@ -7,9 +7,13 @@
 TLP is a C\++ template programming package including below:
 
 - An  compile-time data structure `TypeList`
-- Base algorithms such as  `Length`, `Append`, `Erase`, `Replace`... on `TypeList`
-- Advance algorithms such as  `Any`, `All`, `Filter`, `Map`, `Fold`, `Sort`... on `TypeList`
+
+- Base algorithms on `TypeList` such as  `Length`, `Append`, `Erase`, `Replace`...
+
+- Advanced algorithms on `TypeList` such as  `Any`, `All`, `Filter`, `Map`, `Fold`, `Sort`...
+
 - Template meta programming utils such as `IsEqual`, `IfThenElse`, `Convertible`, `InheritsFrom`...
+
 - A pure compile-time test framework for C\++ template meta programming
 
 To learn more about tlp and how to do C\++ template meta programming,  please visit the doc folder and view the  tests of tlp!
