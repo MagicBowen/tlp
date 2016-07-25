@@ -6,7 +6,7 @@
 
 TLP is a C\++ template programming package including below:
 
-- An  compile-time data structure `TypeList`
+- Compile-time data structure `TypeList`
 
 - Base algorithms on `TypeList` such as  `Length`, `Append`, `Erase`, `Replace`...
 
