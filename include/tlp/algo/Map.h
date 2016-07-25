@@ -1,7 +1,7 @@
 #ifndef H3076EA06_5CF2_461B_BAC0_131AA1B74A0C
 #define H3076EA06_5CF2_461B_BAC0_131AA1B74A0C
 
-#include <tlp/base/NullType.h>
+#include <tlp/type/NullType.h>
 #include <tlp/list/TypeElem.h>
 
 TLP_NS_BEGIN

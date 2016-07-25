@@ -19,6 +19,6 @@ struct IsEqual<T, T>
 
 TLP_NS_END
 
-#define IS_EQUAL(...) TLP_NS::IsEqual<__VA_ARGS__>::Value
+#define IS_EQUAL(T1, T2) TLP_NS::IsEqual<T1, T2>::Value
 
 #endif

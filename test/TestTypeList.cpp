@@ -1,5 +1,5 @@
-#include <cut/cut.hpp>
-#include <tlp/base/IntType.h>
+#include <tlp/utils/Test.h>
+#include <tlp/type/IntType.h>
 #include <tlp/list/TypeList.h>
 #include <tlp/utils/IsEqual.h>
 #include <tlp/utils/IfThenElse.h>
@@ -20,175 +20,179 @@
 #include <tlp/algo/Fold.h>
 #include <tlp/algo/Sort.h>
 
-using tlp::IfThenElse;
-using tlp::Inherits;
-using tlp::IntType;
-
-USING_CUM_NS
-
-FIXTURE(TestTypeList)
+FIXTURE(TestBaseAlgo)
 {
-    TEST("get the size of type list")
+    TEST(get_the_length_of_type_list)
     {
-        ASSERT_THAT(LENGTH(TYPE_LIST(int, char, short)), eq(3));
-    }
+        ASSERT_VALUE_EQ(LENGTH(TYPE_LIST(int, char, short)), 3);
+    };
 
-    TEST("get the type by index")
-    {
-        using List = TYPE_LIST(int, char, short, long);
-        ASSERT_THAT(sizeof(TYPE_AT(List, 3)), eq(8));
-    }
-
-    TEST("get the index of type")
+    TEST(get_the_type_by_index)
     {
         using List = TYPE_LIST(int, char, short, long);
-        ASSERT_THAT(INDEX_OF(List, short), eq(2));
-    }
 
-    TEST("get the index of the none existed type")
+        ASSERT_EQ(TYPE_AT(List, 3), long);
+    };
+
+    TEST(get_the_index_of_type)
+    {
+        using List = TYPE_LIST(int, char, short, long);
+
+        ASSERT_VALUE_EQ(INDEX_OF(List, short), 2);
+    };
+
+    TEST(get_the_index_of_the_none_existed_type)
     {
         using List = TYPE_LIST(int, short, long);
-        ASSERT_THAT(INDEX_OF(List, char), eq(-1));
-    }
 
-    TEST("compare two list")
+        ASSERT_VALUE_EQ(INDEX_OF(List, char), -1);
+    };
+
+    TEST(compare_two_list)
     {
         using List1 = TYPE_LIST(int, short, long);
         using List2 = TYPE_LIST(int, short);
 
-        ASSERT_THAT(IS_EQUAL(List1, List2), be_false());
-    }
+        ASSERT_NE(List1, List2);
+    };
 
-    TEST("append a type to a list")
+    TEST(append_a_type_t_a_list)
     {
         using List = APPEND(TYPE_LIST(int, short), long);
         using Expected = TYPE_LIST(int, short, long);
 
-        ASSERT_THAT(IS_EQUAL(List, Expected), be_true());
-    }
+        ASSERT_EQ(List, Expected);
+    };
 
-    TEST("erase a type from a list")
+    TEST(erase_a_type_from_a_list)
     {
         using List = ERASE(TYPE_LIST(int, short, long), short);
         using Expected = TYPE_LIST(int, long);
 
-        ASSERT_THAT(IS_EQUAL(List, Expected), be_true());
-    }
+        ASSERT_EQ(List, Expected);
+    };
 
-    TEST("erase all the same type from a list")
+    TEST(erase_all_the_same_type_from_a_list)
     {
         using List = ERASE_ALL(TYPE_LIST(short, int, short, long, short), short);
         using Expected = TYPE_LIST(int, long);
 
-        ASSERT_THAT(IS_EQUAL(List, Expected), be_true());
-    }
+        ASSERT_EQ(List, Expected);
+    };
 
-    TEST("remove all the duplicated type from a list")
+    TEST(remove_all_the_duplicated_type_from_a_list)
     {
         using List = UNIQUE(TYPE_LIST(short, int, short, int, long, short, long));
         using Expected = TYPE_LIST(short, int, long);
 
-        ASSERT_THAT(IS_EQUAL(List, Expected), be_true());
-    }
+        ASSERT_EQ(List, Expected);
+    };
 
-    TEST("replace type in a list")
+    TEST(replace_type_in_a_list)
     {
         using List = REPLACE(TYPE_LIST(int, short, long, short), short, int);
         using Expected = TYPE_LIST(int, int, long, short);
 
-        ASSERT_THAT(IS_EQUAL(List, Expected), be_true());
-    }
+        ASSERT_EQ(List, Expected);
+    };
 
-    TEST("replace all the same type in a list")
+    TEST(replace_all_the_same_type_in_a_list)
     {
         using List = REPLACE_ALL(TYPE_LIST(int, short, long, short), short, int);
         using Expected = TYPE_LIST(int, int, long, int);
 
-        ASSERT_THAT(IS_EQUAL(List, Expected), be_true());
-    }
+        ASSERT_EQ(List, Expected);
+    };
+}
+
+FIXTURE(TestAdvancedAlgo)
+{
+    using tlp::IfThenElse;
+    using tlp::Inherits;
+    using tlp::IntType;
 
     template<typename T> struct LargerThan2Bytes{ enum { Value = sizeof(T) > 2 }; };
 
-    TEST("any one of the list satisfied prediction")
+    TEST(any_one_of_the_list_satisfied_the_given_prediction)
     {
-        ASSERT_THAT(ANY(TYPE_LIST(char, short, int), LargerThan2Bytes), be_true());
-    }
+        ASSERT_TRUE(ANY(TYPE_LIST(char, short, int), LargerThan2Bytes));
+    };
 
-    TEST("none of the list satisfied prediction")
+    TEST(none_of_the_list_satisfied_the_given_prediction)
     {
-        ASSERT_THAT(ANY(TYPE_LIST(char, short), LargerThan2Bytes), be_false());
-    }
+        ASSERT_FALSE(ANY(TYPE_LIST(char, short), LargerThan2Bytes));
+    };
 
-    TEST("all of the list satisfied prediction")
+    TEST(all_of_the_list_satisfied_the_given_prediction)
     {
-        ASSERT_THAT(ALL(TYPE_LIST(int, long), LargerThan2Bytes), be_true());
-    }
+        ASSERT_TRUE(ALL(TYPE_LIST(int, long), LargerThan2Bytes));
+    };
 
-    TEST("any of the type in list not satisfied prediction")
+    TEST(any_of_the_type_in_list_not_satisfied_the_given_prediction)
     {
-        ASSERT_THAT(ALL(TYPE_LIST(int, long, short), LargerThan2Bytes), be_false());
-    }
+        ASSERT_FALSE(ALL(TYPE_LIST(int, long, short), LargerThan2Bytes));
+    };
 
-    TEST("filter the list")
+    TEST(filter_the_list_by_the_given_prediction)
     {
         using List = FILTER(TYPE_LIST(int, char, short, long), LargerThan2Bytes);
         using Expected = TYPE_LIST(int, long);
 
-        ASSERT_THAT(IS_EQUAL(List, Expected), be_true());
-    }
+        ASSERT_EQ(List, Expected);
+    };
 
-    template<typename T> struct TypeSize { using Result = IntType<sizeof(T)>; };
-
-    TEST("map the list")
+    TEST(map_the_list_by_the_given_transform_function)
     {
+        template<typename T> struct TypeSize { using Result = IntType<sizeof(T)>; };
+
         using List = MAP(TYPE_LIST(int, char, short, long), TypeSize);
         using Expected = TYPE_LIST(IntType<4>, IntType<1>, IntType<2>, IntType<8>);
 
-        ASSERT_THAT(IS_EQUAL(List, Expected), be_true());
-    }
+        ASSERT_EQ(List, Expected);
+    };
 
-    template<typename T, typename U>
-    struct SumSize { using Result = IntType<T::Value + sizeof(U)>; };
-
-    TEST("fold the list")
+    TEST(fold_the_list_by_the_given_accumulate_function)
     {
+        template<typename T, typename U>
+        struct SumSize { using Result = IntType<T::Value + sizeof(U)>; };
+
         using List = TYPE_LIST(int, char, long);
         using Result = FOLD(List, IntType<0>, SumSize);
 
-        ASSERT_THAT(Result::Value, eq(13));
-    }
-
-    template<typename T, typename U>
-    struct SizeLarger
-    {
-        using Result = typename IfThenElse<(sizeof(T) > sizeof(U)), T, U>::Result;
+        ASSERT_VALUE_EQ(Result::Value, 13);
     };
 
-    TEST("sort a list by type size")
+    TEST(sort_a_list_by_the_given_size_compared_rule)
     {
+        template<typename T, typename U>
+        struct SizeLarger
+        {
+            using Result = typename IfThenElse<(sizeof(T) > sizeof(U)), T, U>::Result;
+        };
+
         using List = TYPE_LIST(char, long, short, long, int);
         using Expected = TYPE_LIST(long, long, int, short, char);
 
-        ASSERT_THAT(IS_EQUAL(SORT(List, SizeLarger), Expected), be_true());
-    }
-
-    struct Base{};
-    struct Leaf1 : Base {};
-    struct Branch : Base {};
-    struct Leaf2 : Branch {};
-    struct Leaf3 : Branch {};
-
-    template<typename T, typename U>
-    struct TypeUpper
-    {
-        using Result = typename IfThenElse<Inherits<T, U>::Value, T, U>::Result;
+        ASSERT_EQ(SORT(List, SizeLarger), Expected);
     };
 
-    TEST("sort a list by type inherit relationship")
+    TEST(sort_a_list_by_type_inherit_relationship)
     {
+        struct Base{};
+        struct Leaf1 : Base {};
+        struct Branch : Base {};
+        struct Leaf2 : Branch {};
+        struct Leaf3 : Branch {};
+
+        template<typename T, typename U>
+        struct TypeUpper
+        {
+            using Result = typename IfThenElse<Inherits<T, U>::Value, T, U>::Result;
+        };
+
         using List = TYPE_LIST(Branch, Leaf2, Base, Leaf3, Leaf1);
         using Expected = TYPE_LIST(Base, Branch, Leaf2, Leaf3, Leaf1);
 
-        ASSERT_THAT(IS_EQUAL(SORT(List, TypeUpper), Expected), be_true());
-    }
-};
+        ASSERT_EQ(SORT(List, TypeUpper), Expected);
+    };
+}

@@ -1,6 +1,3 @@
-#include <cut/cut.hpp>
+#include <tlp/utils/Test.h>
 
-int main(int argc, char** argv)
-{
-    return cut::run_all_tests(argc, argv);
-}
+TLP_RUN_ALL_TESTS();

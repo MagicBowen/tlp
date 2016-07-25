@@ -1,7 +1,7 @@
 #ifndef H243161B1_9A85_4DA5_AA89_99BBF804A352
 #define H243161B1_9A85_4DA5_AA89_99BBF804A352
 
-#include <tlp/base/NullType.h>
+#include <tlp/type/NullType.h>
 #include <tlp/list/TypeElem.h>
 
 TLP_NS_BEGIN

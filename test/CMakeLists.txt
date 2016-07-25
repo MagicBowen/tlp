@@ -8,4 +8,4 @@ FILE(GLOB_RECURSE all_files
 *.C)
 
 add_executable(tlp-test ${all_files})
-target_link_libraries(tlp-test cut)
+target_link_libraries(tlp-test)

@@ -1,7 +1,7 @@
 #ifndef HFC7E5996_A206_4CE7_8BE5_92E88E137F40
 #define HFC7E5996_A206_4CE7_8BE5_92E88E137F40
 
-#include <tlp/base/NullType.h>
+#include <tlp/type/NullType.h>
 #include <tlp/list/TypeElem.h>
 
 TLP_NS_BEGIN
