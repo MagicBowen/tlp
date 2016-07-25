@@ -2,8 +2,8 @@
 #include <tlp/utils/IsEqual.h>
 #include <tlp/utils/Not.h>
 #include <tlp/utils/IfThenElse.h>
-#include <tlp/utils/Convertible.h>
-#include <tlp/utils/InheritsFrom.h>
+#include <tlp/utils/IsConvertible.h>
+#include <tlp/utils/IsBaseOf.h>
 
 FIXTURE(TestUtils)
 {
@@ -40,9 +40,9 @@ FIXTURE(TestUtils)
 
     TEST(try_convert_the_convertible_types)
     {
-        ASSERT_TRUE(CONVERTIBLE(char, int));
-        ASSERT_FALSE(CONVERTIBLE(char, void*));
-        ASSERT_TRUE(CONVERTIBLE(char*, void*));
+        ASSERT_TRUE(IS_CONVERTIBLE(char, int));
+        ASSERT_FALSE(IS_CONVERTIBLE(char, void*));
+        ASSERT_TRUE(IS_CONVERTIBLE(char*, void*));
     };
 
     TEST(try_convert_the_hierarchy_types)
@@ -50,17 +50,17 @@ FIXTURE(TestUtils)
         struct Base{};
         struct Derived : Base {};
 
-        ASSERT_FALSE(CONVERTIBLE(Base, Derived));
-        ASSERT_TRUE(CONVERTIBLE(Derived, Base));
+        ASSERT_FALSE(IS_CONVERTIBLE(Base, Derived));
+        ASSERT_TRUE(IS_CONVERTIBLE(Derived, Base));
 
-        ASSERT_FALSE(CONVERTIBLE(Base*, Derived*));
-        ASSERT_TRUE(CONVERTIBLE(Derived*, Base*));
+        ASSERT_FALSE(IS_CONVERTIBLE(Base*, Derived*));
+        ASSERT_TRUE(IS_CONVERTIBLE(Derived*, Base*));
     };
 
     TEST(try_convert_the_both_convertible_types)
     {
-        ASSERT_TRUE(BOTH_CONVERTIBLE(short, int));
-        ASSERT_FALSE(BOTH_CONVERTIBLE(char*, void*));
+        ASSERT_TRUE(IS_BOTH_CONVERTIBLE(short, int));
+        ASSERT_FALSE(IS_BOTH_CONVERTIBLE(char*, void*));
     };
 
     TEST(try_test_inherits_relationship_of_the_super_sub_types)
@@ -68,9 +68,9 @@ FIXTURE(TestUtils)
         struct Base{};
         struct Derived : Base {};
 
-        ASSERT_FALSE(INHERITS_FROM(int, char));
-        ASSERT_FALSE(INHERITS_FROM(void*, char*));
-        ASSERT_TRUE(INHERITS_FROM(Base, Derived));
-        ASSERT_FALSE(INHERITS_FROM(Derived, Base));
+        ASSERT_FALSE(IS_BASE_OF(int, char));
+        ASSERT_FALSE(IS_BASE_OF(void*, char*));
+        ASSERT_TRUE(IS_BASE_OF(Base, Derived));
+        ASSERT_FALSE(IS_BASE_OF(Derived, Base));
     };
 }

@@ -6,7 +6,7 @@
 TLP_NS_BEGIN
 
 template<typename T, typename U>
-struct Convertible
+struct IsConvertible
 {
 private:
     using Small = char;
@@ -22,7 +22,7 @@ public:
 
 TLP_NS_END
 
-#define CONVERTIBLE(...) TLP_NS::Convertible<__VA_ARGS__>::Value
-#define BOTH_CONVERTIBLE(T, U) (CONVERTIBLE(T, U) && CONVERTIBLE(U, T))
+#define IS_CONVERTIBLE(...) TLP_NS::IsConvertible<__VA_ARGS__>::Value
+#define IS_BOTH_CONVERTIBLE(T, U) (IS_CONVERTIBLE(T, U) && IS_CONVERTIBLE(U, T))
 
 #endif
