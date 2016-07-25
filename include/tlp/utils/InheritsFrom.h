@@ -7,7 +7,7 @@
 TLP_NS_BEGIN
 
 template<typename T, typename U>
-struct Inherits
+struct InheritsFrom
 {
     enum { Value = Convertible<const U*, const T*>::Value &&
                   !IsEqual<const T*, const void*>::Value &&
@@ -16,6 +16,6 @@ struct Inherits
 
 TLP_NS_END
 
-#define INHERITS(...) TLP_NS::Inherits<__VA_ARGS__>::Value
+#define INHERITS_FROM(...) TLP_NS::InheritsFrom<__VA_ARGS__>::Value
 
 #endif

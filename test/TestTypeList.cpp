@@ -3,7 +3,7 @@
 #include <tlp/list/TypeList.h>
 #include <tlp/utils/IsEqual.h>
 #include <tlp/utils/IfThenElse.h>
-#include <tlp/utils/Inherits.h>
+#include <tlp/utils/InheritsFrom.h>
 #include <tlp/algo/Length.h>
 #include <tlp/algo/IndexOf.h>
 #include <tlp/algo/TypeAt.h>
@@ -108,7 +108,7 @@ FIXTURE(TestBaseAlgo)
 FIXTURE(TestAdvancedAlgo)
 {
     using tlp::IfThenElse;
-    using tlp::Inherits;
+    using tlp::InheritsFrom;
     using tlp::IntType;
 
     template<typename T> struct LargerThan2Bytes{ enum { Value = sizeof(T) > 2 }; };
@@ -187,7 +187,7 @@ FIXTURE(TestAdvancedAlgo)
         template<typename T, typename U>
         struct TypeUpper
         {
-            using Result = typename IfThenElse<Inherits<T, U>::Value, T, U>::Result;
+            using Result = typename IfThenElse<InheritsFrom<T, U>::Value, T, U>::Result;
         };
 
         using List = TYPE_LIST(Branch, Leaf2, Base, Leaf3, Leaf1);

@@ -3,7 +3,7 @@
 #include <tlp/utils/Not.h>
 #include <tlp/utils/IfThenElse.h>
 #include <tlp/utils/Convertible.h>
-#include <tlp/utils/Inherits.h>
+#include <tlp/utils/InheritsFrom.h>
 
 FIXTURE(TestUtils)
 {
@@ -16,7 +16,6 @@ FIXTURE(TestUtils)
     {
         ASSERT_FALSE(IS_EQUAL(int, short));
     };
-
 
     TEST(opposite_of_a_prediction)
     {
@@ -69,9 +68,9 @@ FIXTURE(TestUtils)
         struct Base{};
         struct Derived : Base {};
 
-        ASSERT_FALSE(INHERITS(int, char));
-        ASSERT_FALSE(INHERITS(void*, char*));
-        ASSERT_TRUE(INHERITS(Base, Derived));
-        ASSERT_FALSE(INHERITS(Derived, Base));
+        ASSERT_FALSE(INHERITS_FROM(int, char));
+        ASSERT_FALSE(INHERITS_FROM(void*, char*));
+        ASSERT_TRUE(INHERITS_FROM(Base, Derived));
+        ASSERT_FALSE(INHERITS_FROM(Derived, Base));
     };
 }
