@@ -110,9 +110,9 @@ FIXTURE(TestBaseAlgo)
 
 FIXTURE(TestAdvancedAlgo)
 {
-    using tlp::IfThenElse;
-    using tlp::IsBaseOf;
-    using tlp::IntType;
+    using TLP_NS::IfThenElse;
+    using TLP_NS::IsBaseOf;
+    using TLP_NS::IntType;
 
     template<typename T> struct LargerThan2Bytes{ enum { Value = sizeof(T) > 2 }; };
 
@@ -202,12 +202,14 @@ FIXTURE(TestAdvancedAlgo)
 
 FIXTURE(TestInheritsAggregateAlgo)
 {
+    using EmptyType = TLP_NS::EmptyType;
+
     template<typename T> struct Holder { T t; };
 
     TEST("scatter inherits from a type list")
     {
         using Aggregator = SCATTER_INHERITS(TYPE_LIST(int, short, char), Holder);
 
-        ASSERT_VALUE_EQ(sizeof(Aggregator), sizeof(int) + sizeof(short) + sizeof(char) + sizeof(tlp::EmptyType));
+        ASSERT_VALUE_EQ(sizeof(Aggregator), sizeof(int) + sizeof(short) + sizeof(char) + sizeof(EmptyType));
     };
 }
