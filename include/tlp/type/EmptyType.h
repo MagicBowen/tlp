@@ -5,7 +5,7 @@
 
 TLP_NS_BEGIN
 
-struct DummyType
+struct EmptyType
 {
 };
 

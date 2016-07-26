@@ -2,6 +2,7 @@
 #define H2FBB703F_2DC3_46B1_9587_2A90DA15C335
 
 #include <tlp/utils/IsEqual.h>
+#include <tlp/utils/UniqueName.h>
 #include <iostream>
 
 #define ASSERT_TRUE(Value)              \
@@ -24,7 +25,7 @@ static_assert((V != Expected), "TLP Error: expect "#V" be not equal to "#Expecte
 
 #define FIXTURE(Name) namespace Name
 
-#define TEST(Name) struct Test_##Name
+#define TEST(Name) struct UNIQUE_NAME(Test_)
 
 #define TLP_RUN_ALL_TESTS()             \
 int main() { std::cout << "TLP RUN ALL TESTS OK!!!" << std::endl; return 0; }
