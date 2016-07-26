@@ -169,10 +169,7 @@ FIXTURE(TestAdvancedAlgo)
     TEST("sort a list by the given size compared rule")
     {
         template<typename T, typename U>
-        struct SizeLarger
-        {
-            using Result = typename IfThenElse<(sizeof(T) > sizeof(U)), T, U>::Result;
-        };
+        using SizeLarger = IfThenElse<(sizeof(T) > sizeof(U)), T, U>;
 
         using List = TYPE_LIST(char, long, short, long, int);
         using Expected = TYPE_LIST(long, long, int, short, char);
@@ -189,10 +186,7 @@ FIXTURE(TestAdvancedAlgo)
         struct Leaf3 : Branch {};
 
         template<typename T, typename U>
-        struct TypeUpper
-        {
-            using Result = typename IfThenElse<IsBaseOf<T, U>::Value, T, U>::Result;
-        };
+        using TypeUpper = IfThenElse<IsBaseOf<T, U>::Value, T, U>;
 
         using List = TYPE_LIST(Branch, Leaf2, Base, Leaf3, Leaf1);
         using Expected = TYPE_LIST(Base, Branch, Leaf2, Leaf3, Leaf1);
