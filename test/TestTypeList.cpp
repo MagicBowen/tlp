@@ -157,8 +157,8 @@ FIXTURE(TestAdvancedAlgo)
 
     TEST("fold the list by the given accumulate function")
     {
-        template<typename T, typename U>
-        struct SumSize { using Result = IntType<T::Value + sizeof(U)>; };
+        template<typename Acc, typename T>
+        struct SumSize { using Result = IntType<Acc::Value + sizeof(T)>; };
 
         using List = TYPE_LIST(int, char, long);
         using Result = FOLD(List, IntType<0>, SumSize);
