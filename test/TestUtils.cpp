@@ -73,4 +73,4 @@ FIXTURE(TestUtils)
         ASSERT_TRUE(IS_BASE_OF(Base, Derived));
         ASSERT_FALSE(IS_BASE_OF(Derived, Base));
     };
-}
+};

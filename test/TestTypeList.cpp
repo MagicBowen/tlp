@@ -22,6 +22,7 @@
 #include <tlp/algo/Fold.h>
 #include <tlp/algo/Sort.h>
 #include <tlp/algo/ScatterInherits.h>
+#include <tlp/algo/LinearInherits.h>
 
 FIXTURE(TestBaseAlgo)
 {
@@ -106,7 +107,7 @@ FIXTURE(TestBaseAlgo)
 
         ASSERT_EQ(List, Expected);
     };
-}
+};
 
 FIXTURE(TestAdvancedAlgo)
 {
@@ -198,18 +199,26 @@ FIXTURE(TestAdvancedAlgo)
 
         ASSERT_EQ(SORT(List, TypeUpper), Expected);
     };
-}
+};
 
 FIXTURE(TestInheritsAggregateAlgo)
 {
-    using EmptyType = TLP_NS::EmptyType;
-
-    template<typename T> struct Holder { T t; };
+    using TLP_NS::EmptyType;
 
     TEST("scatter inherits from a type list")
     {
+        template<typename T> struct Holder { T t; };
         using Aggregator = SCATTER_INHERITS(TYPE_LIST(int, short, char), Holder);
 
-        ASSERT_VALUE_EQ(sizeof(Aggregator), sizeof(int) + sizeof(short) + sizeof(char) + sizeof(EmptyType));
+        ASSERT_TRUE(IS_BASE_OF(Holder<int>, Aggregator));
+        ASSERT_FALSE(IS_BASE_OF(Holder<int>, Holder<short>));
     };
-}
+
+    TEST("linear inherits from a type list")
+    {
+        template<typename T, typename Base> struct Holder : Base { T t; };
+        using Aggregator = LINEAR_INHERITS(TYPE_LIST(int, short, char), Holder);
+
+        ASSERT_TRUE(IS_BASE_OF(Holder<char, EmptyType>, Aggregator));
+    };
+};
