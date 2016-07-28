@@ -6,10 +6,10 @@
 
 TLP_NS_BEGIN
 
-template<typename H, typename ...TAILS>
+template<typename Head, typename ...Tails>
 struct TypeList
 {
-    using Result = TypeElem<H, typename TypeList<TAILS...>::Result>;
+    using Result = TypeElem<Head, typename TypeList<Tails...>::Result>;
 };
 
 template<typename H>

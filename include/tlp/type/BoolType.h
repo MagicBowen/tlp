@@ -24,7 +24,8 @@ using False = BoolType<false>;
 
 TLP_NS_END
 
-#define __true    TLP_NS::True
-#define __false   TLP_NS::False
+#define __bool(...)  TLP_NS::BooType<__VA_ARGS__>
+#define __true       TLP_NS::True
+#define __false      TLP_NS::False
 
 #endif

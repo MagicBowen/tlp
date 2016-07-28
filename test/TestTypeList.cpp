@@ -8,6 +8,7 @@
 #include <tlp/utils/IfThenElse.h>
 #include <tlp/utils/IsBaseOf.h>
 #include <tlp/utils/IsConvertible.h>
+#include <tlp/list/ValueList.h>
 #include <tlp/algo/Length.h>
 #include <tlp/algo/IndexOf.h>
 #include <tlp/algo/TypeAt.h>
@@ -113,31 +114,31 @@ FIXTURE(TestBaseAlgo)
 
 FIXTURE(TestAdvancedAlgo)
 {
-    template<typename T> struct LargerThan2Bytes{ enum { Value = sizeof(T) > 2 }; };
+    template<typename T> struct IsLargerThan2Bytes{ enum { Value = sizeof(T) > 2 }; };
 
     TEST("any one of the list satisfied the given prediction")
     {
-        ASSERT_TRUE(__any(__type_list(char, short, int), LargerThan2Bytes));
+        ASSERT_TRUE(__any(__type_list(char, short, int), IsLargerThan2Bytes));
     };
 
     TEST("none of the list satisfied the given prediction")
     {
-        ASSERT_FALSE(__any(__type_list(char, short), LargerThan2Bytes));
+        ASSERT_FALSE(__any(__type_list(char, short), IsLargerThan2Bytes));
     };
 
     TEST("all of the list satisfied the given prediction")
     {
-        ASSERT_TRUE(__all(__type_list(int, long), LargerThan2Bytes));
+        ASSERT_TRUE(__all(__type_list(int, long), IsLargerThan2Bytes));
     };
 
     TEST("any of the type in list not satisfied the given prediction")
     {
-        ASSERT_FALSE(__all(__type_list(int, long, short), LargerThan2Bytes));
+        ASSERT_FALSE(__all(__type_list(int, long, short), IsLargerThan2Bytes));
     };
 
     TEST("filter the list by the given prediction")
     {
-        using List = __filter(__type_list(int, char, short, long), LargerThan2Bytes);
+        using List = __filter(__type_list(int, char, short, long), IsLargerThan2Bytes);
         using Expected = __type_list(int, long);
 
         ASSERT_EQ(List, Expected);
@@ -148,7 +149,7 @@ FIXTURE(TestAdvancedAlgo)
         template<typename T> struct TypeSize { using Result = __int(sizeof(T)); };
 
         using List = __map(__type_list(int, char, short, long), TypeSize);
-        using Expected = __type_list(__int(4), __int(1), __int(2), __int(8));
+        using Expected = __value_list(4, 1, 2, 8);
 
         ASSERT_EQ(List, Expected);
     };
@@ -184,12 +185,12 @@ FIXTURE(TestAdvancedAlgo)
         struct Leaf3 : Branch {};
 
         template<typename T, typename U>
-        using TypeUpper = TLP_NS::IfThenElse<__is_base_of(T, U), T, U>;
+        using Supper = TLP_NS::IfThenElse<__is_base_of(T, U), T, U>;
 
         using List = __type_list(Branch, Leaf2, Base, Leaf3, Leaf1);
         using Expected = __type_list(Base, Branch, Leaf2, Leaf3, Leaf1);
 
-        ASSERT_EQ(__sort(List, TypeUpper), Expected);
+        ASSERT_EQ(__sort(List, Supper), Expected);
     };
 };
 
