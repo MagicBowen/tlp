@@ -27,6 +27,6 @@ struct ReplaceAll<TypeElem<Head, Tail>, T, U>
 
 TLP_NS_END
 
-#define REPLACE_ALL(...) typename TLP_NS::ReplaceAll<__VA_ARGS__>::Result
+#define __replace_all(...) typename TLP_NS::ReplaceAll<__VA_ARGS__>::Result
 
 #endif

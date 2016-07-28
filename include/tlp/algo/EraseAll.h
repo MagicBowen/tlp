@@ -28,6 +28,6 @@ struct EraseAll<TypeElem<Head, Tail>, T>
 
 TLP_NS_END
 
-#define ERASE_ALL(...) typename TLP_NS::EraseAll<__VA_ARGS__>::Result
+#define __erase_all(...) typename TLP_NS::EraseAll<__VA_ARGS__>::Result
 
 #endif

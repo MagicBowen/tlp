@@ -9,17 +9,17 @@ TLP_NS_BEGIN
 template<typename H, typename ...TAILS>
 struct TypeList
 {
-    using List = TypeElem<H, typename TypeList<TAILS...>::List>;
+    using Result = TypeElem<H, typename TypeList<TAILS...>::Result>;
 };
 
 template<typename H>
 struct TypeList<H>
 {
-    using List = TypeElem<H, NullType>;
+    using Result = TypeElem<H, NullType>;
 };
 
 TLP_NS_END
 
-#define TYPE_LIST(...) typename TLP_NS::TypeList<__VA_ARGS__>::List
+#define __type_list(...) typename TLP_NS::TypeList<__VA_ARGS__>::Result
 
 #endif

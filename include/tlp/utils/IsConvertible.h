@@ -22,7 +22,7 @@ public:
 
 TLP_NS_END
 
-#define IS_CONVERTIBLE(...) TLP_NS::IsConvertible<__VA_ARGS__>::Value
-#define IS_BOTH_CONVERTIBLE(T, U) (IS_CONVERTIBLE(T, U) && IS_CONVERTIBLE(U, T))
+#define __is_convertible(...)           TLP_NS::IsConvertible<__VA_ARGS__>::Value
+#define __is_both_convertible(T, U)     (__is_convertible(T, U) && __is_convertible(U, T))
 
 #endif

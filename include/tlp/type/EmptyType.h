@@ -11,4 +11,6 @@ struct EmptyType
 
 TLP_NS_END
 
+#define __empty    TLP_NS::EmptyType
+
 #endif

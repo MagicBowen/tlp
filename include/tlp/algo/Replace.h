@@ -28,6 +28,6 @@ struct Replace<TypeElem<Head, Tail>, T, U>
 
 TLP_NS_END
 
-#define REPLACE(...) typename TLP_NS::Replace<__VA_ARGS__>::Result
+#define __replace(...) typename TLP_NS::Replace<__VA_ARGS__>::Result
 
 #endif

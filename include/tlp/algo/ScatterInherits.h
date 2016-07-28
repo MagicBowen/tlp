@@ -27,6 +27,6 @@ struct ScatterInherits<TypeElem<Head, Tail>, Unit>
 
 TLP_NS_END
 
-#define SCATTER_INHERITS(...) TLP_NS::ScatterInherits<__VA_ARGS__>
+#define __scatter_inherits(...) TLP_NS::ScatterInherits<__VA_ARGS__>
 
 #endif

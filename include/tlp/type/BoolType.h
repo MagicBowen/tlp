@@ -19,6 +19,12 @@ struct BoolType<false>
     enum { Value = false };
 };
 
+using True = BoolType<true>;
+using False = BoolType<false>;
+
 TLP_NS_END
+
+#define __true    TLP_NS::True
+#define __false   TLP_NS::False
 
 #endif

@@ -21,6 +21,6 @@ struct Unique<TypeElem<H, T>>
 
 TLP_NS_END
 
-#define UNIQUE(...) typename TLP_NS::Unique<__VA_ARGS__>::Result
+#define __unique(...) typename TLP_NS::Unique<__VA_ARGS__>::Result
 
 #endif

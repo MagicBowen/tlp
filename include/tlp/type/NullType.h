@@ -9,4 +9,6 @@ struct NullType;
 
 TLP_NS_END
 
+#define __null    TLP_NS::NullType
+
 #endif

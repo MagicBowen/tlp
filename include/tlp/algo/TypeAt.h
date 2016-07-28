@@ -21,6 +21,6 @@ struct TypeAt<TypeElem<H, T>, i>
 
 TLP_NS_END
 
-#define TYPE_AT(...) typename TLP_NS::TypeAt<__VA_ARGS__>::Result
+#define __at(...) typename TLP_NS::TypeAt<__VA_ARGS__>::Result
 
 #endif

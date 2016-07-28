@@ -25,6 +25,6 @@ struct Filter<TypeElem<Head, Tail>, Pred>
 
 TLP_NS_END
 
-#define FILTER(...) typename TLP_NS::Filter<__VA_ARGS__>::Result
+#define __filter(...) typename TLP_NS::Filter<__VA_ARGS__>::Result
 
 #endif

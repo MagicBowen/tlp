@@ -13,4 +13,6 @@ struct IntType
 
 TLP_NS_END
 
+#define __int(value)    TLP_NS::IntType<value>
+
 #endif

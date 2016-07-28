@@ -1,8 +1,7 @@
 #ifndef HFC7E5996_A206_4CE7_8BE5_92E88E137F40
 #define HFC7E5996_A206_4CE7_8BE5_92E88E137F40
 
-#include <tlp/type/NullType.h>
-#include <tlp/list/TypeElem.h>
+#include <tlp/list/TypeList.h>
 
 TLP_NS_BEGIN
 
@@ -17,7 +16,7 @@ struct Append<NullType, NullType>
 template<typename T>
 struct Append<NullType, T>
 {
-    using Result = typename TypeList<T>::List;
+    using Result = typename TypeList<T>::Result;
 };
 
 template<typename H, typename T>
@@ -34,6 +33,6 @@ struct Append<TypeElem<Head, Tail>, T>
 
 TLP_NS_END
 
-#define APPEND(...) typename TLP_NS::Append<__VA_ARGS__>::Result
+#define __append(...) typename TLP_NS::Append<__VA_ARGS__>::Result
 
 #endif

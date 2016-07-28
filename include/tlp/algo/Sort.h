@@ -27,6 +27,6 @@ public:
 
 TLP_NS_END
 
-#define SORT(...) typename TLP_NS::Sort<__VA_ARGS__>::Result
+#define __sort(...) typename TLP_NS::Sort<__VA_ARGS__>::Result
 
 #endif

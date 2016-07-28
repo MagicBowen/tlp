@@ -17,6 +17,6 @@ struct Print
 
 TLP_NS_END
 
-#define TLP_PRINT(value) char UNIQUE_NAME(tlp_print_) = TLP_NS::Print<value>()
+#define __print(value) char UNIQUE_NAME(tlp_print_) = TLP_NS::Print<value>()
 
 #endif

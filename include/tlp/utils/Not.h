@@ -9,12 +9,14 @@ template<template<typename T> class Pred>
 struct Not
 {
     template<typename U>
-    struct Result
+    struct Apply
     {
         enum { Value = !Pred<U>::Value };
     };
 };
 
 TLP_NS_END
+
+#define __not(...)  TLP_NS::Not<__VA_ARGS__>::template Apply
 
 #endif

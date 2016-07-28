@@ -31,6 +31,6 @@ struct LinearInherits<TypeElem<Head, Tail>, Unit, Root>
 
 TLP_NS_END
 
-#define LINEAR_INHERITS(...) TLP_NS::LinearInherits<__VA_ARGS__>
+#define __linear_inherits(...) TLP_NS::LinearInherits<__VA_ARGS__>
 
 #endif

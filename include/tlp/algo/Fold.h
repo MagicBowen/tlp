@@ -22,6 +22,6 @@ struct Fold<TypeElem<Head, Tail>, T, Func>
 
 TLP_NS_END
 
-#define FOLD(...) typename TLP_NS::Fold<__VA_ARGS__>::Result
+#define __fold(...) typename TLP_NS::Fold<__VA_ARGS__>::Result
 
 #endif

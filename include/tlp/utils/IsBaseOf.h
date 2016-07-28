@@ -16,6 +16,6 @@ struct IsBaseOf
 
 TLP_NS_END
 
-#define IS_BASE_OF(...) TLP_NS::IsBaseOf<__VA_ARGS__>::Value
+#define __is_base_of(...) TLP_NS::IsBaseOf<__VA_ARGS__>::Value
 
 #endif

@@ -32,6 +32,6 @@ public:
 
 TLP_NS_END
 
-#define INDEX_OF(...) TLP_NS::IndexOf<__VA_ARGS__>::Value
+#define __index_of(...) TLP_NS::IndexOf<__VA_ARGS__>::Value
 
 #endif

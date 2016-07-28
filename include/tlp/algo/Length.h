@@ -22,6 +22,6 @@ struct Length<TypeElem<H, NullType>>
 
 TLP_NS_END
 
-#define LENGTH(...) TLP_NS::Length<__VA_ARGS__>::Value
+#define __length(...) TLP_NS::Length<__VA_ARGS__>::Value
 
 #endif

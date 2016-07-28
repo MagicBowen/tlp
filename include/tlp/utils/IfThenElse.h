@@ -19,6 +19,6 @@ struct IfThenElse<false, T, U>
 
 TLP_NS_END
 
-#define IF_THEN_ELSE(...) typename TLP_NS::IfThenElse<__VA_ARGS__>::Result
+#define __if(...) typename TLP_NS::IfThenElse<__VA_ARGS__>::Result
 
 #endif

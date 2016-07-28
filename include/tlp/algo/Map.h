@@ -22,6 +22,6 @@ struct Map<TypeElem<Head, Tail>, Func>
 
 TLP_NS_END
 
-#define MAP(...) typename TLP_NS::Map<__VA_ARGS__>::Result
+#define __map(...) typename TLP_NS::Map<__VA_ARGS__>::Result
 
 #endif

@@ -9,11 +9,11 @@ TLP_NS_BEGIN
 template<typename TL, template<typename T> class Pred>
 struct All
 {
-    enum { Value = !Any<TL, Not<Pred>::template Result>::Value };
+    enum { Value = !Any<TL, Not<Pred>::template Apply>::Value };
 };
 
 TLP_NS_END
 
-#define ALL(...) TLP_NS::All<__VA_ARGS__>::Value
+#define __all(...) TLP_NS::All<__VA_ARGS__>::Value
 
 #endif

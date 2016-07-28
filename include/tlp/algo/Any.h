@@ -22,6 +22,6 @@ struct Any<TypeElem<Head, Tail>, Pred>
 
 TLP_NS_END
 
-#define ANY(...) TLP_NS::Any<__VA_ARGS__>::Value
+#define __any(...) TLP_NS::Any<__VA_ARGS__>::Value
 
 #endif
