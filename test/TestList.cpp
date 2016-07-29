@@ -210,13 +210,13 @@ FIXTURE(TestAdvancedAlgo)
 
     TEST("transform two type list to a third list")
     {
-        __def_func_2(BePointerOf, __is_eq(_1, _2*));
+        __def_func_2(IsPointerOf, __is_eq(_1, _2*));
 
         using List1 = __type_list(int*, char, long**, short*);
         using List2 = __type_list(int, char, long*, int);
         using Expected = __type_list(__true(), __false(), __true(), __false());
 
-        ASSERT_EQ(__transform(List1, List2, BePointerOf), Expected);
+        ASSERT_EQ(__transform(List1, List2, IsPointerOf), Expected);
     };
 
     TEST("filter the list by the given prediction")
