@@ -22,6 +22,7 @@
 #include <tlp/list/algo/ReplaceAll.h>
 #include <tlp/list/algo/Any.h>
 #include <tlp/list/algo/All.h>
+#include <tlp/list/algo/Transform.h>
 #include <tlp/list/algo/Filter.h>
 #include <tlp/list/algo/Map.h>
 #include <tlp/list/algo/Fold.h>
@@ -203,6 +204,17 @@ FIXTURE(TestAdvancedAlgo)
     TEST("any of the type in list not satisfied the given prediction")
     {
         ASSERT_FALSE(__all(__type_list(int, long, short), IsLargerThan2Bytes));
+    };
+
+    TEST("transform two type list to a third list")
+    {
+        template<typename T1, typename T2> struct BePointerOf { using Result =  __is_eq(T1, T2*); };
+
+        using List1 = __type_list(int*, char, long**, short*);
+        using List2 = __type_list(int, char, long*, int);
+        using Expected = __type_list(__true(), __false(), __true(), __false());
+
+        ASSERT_EQ(__transform(List1, List2, BePointerOf), Expected);
     };
 
     TEST("filter the list by the given prediction")
