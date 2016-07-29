@@ -18,9 +18,9 @@ struct Filter<NullType, Pred>
 template<typename Head, typename Tail, template<typename T> class Pred>
 struct Filter<TypeElem<Head, Tail>, Pred>
 {
-    using Result = typename Select< Pred<Head>::Value
-                                      , TypeElem<Head, typename Filter<Tail, Pred>::Result>
-                                      , typename Filter<Tail,Pred>::Result>::Result;
+    using Result = typename Select< typename Pred<Head>::Result,
+                                    TypeElem<Head, typename Filter<Tail, Pred>::Result>,
+                                    typename Filter<Tail,Pred>::Result>::Result;
 };
 
 TLP_NS_END

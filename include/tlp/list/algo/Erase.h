@@ -14,10 +14,10 @@ struct Erase<NullType, T>
     using Result = NullType;
 };
 
-template<typename H, typename T>
-struct Erase<TypeElem<H, T>, H>
+template<typename Head, typename Tail>
+struct Erase<TypeElem<Head, Tail>, Head>
 {
-    using Result = T;
+    using Result = Tail;
 };
 
 template<typename Head, typename Tail, typename T>

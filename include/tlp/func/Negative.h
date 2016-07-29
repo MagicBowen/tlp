@@ -11,7 +11,7 @@ struct Negative
     template<typename U>
     struct Apply
     {
-        using Result = Not<typename Pred<U>::Result>;
+        using Result = typename Not<typename Pred<U>::Result>::Result;
     };
 };
 

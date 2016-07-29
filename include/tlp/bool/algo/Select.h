@@ -2,20 +2,19 @@
 #define H4C7D264B_067B_4419_86B3_50BBEB53FC0B
 
 #include <tlp/bool/BoolType.h>
-#include <tlp/base/NullType.h>
 
 TLP_NS_BEGIN
 
 template<typename Condition, typename T, typename U> struct Select;
 
 template<typename T, typename U>
-struct Select<BoolType<true>, T, U>
+struct Select<TrueType, T, U>
 {
     using Result = T;
 };
 
 template<typename T, typename U>
-struct Select<BoolType<false>, T, U>
+struct Select<FalseType, T, U>
 {
     using Result = U;
 };

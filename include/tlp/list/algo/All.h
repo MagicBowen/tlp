@@ -2,6 +2,7 @@
 #define HDA5EBD3E_C192_420F_962B_DF1D83F25D2D
 
 #include <tlp/list/algo/Any.h>
+#include <tlp/bool/algo/Not.h>
 #include <tlp/func/Negative.h>
 
 TLP_NS_BEGIN
@@ -9,7 +10,7 @@ TLP_NS_BEGIN
 template<typename TL, template<typename T> class Pred>
 struct All
 {
-    using Result = Not<Any<TL, Negative<Pred>::template Apply>::Result>;
+    using Result = typename Not<typename Any<TL, Negative<Pred>::template Apply>::Result>::Result;
 };
 
 TLP_NS_END

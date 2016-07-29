@@ -16,14 +16,14 @@
 #include <tlp/list/algo/TypeAt.h>
 #include <tlp/list/algo/IndexOf.h>
 #include <tlp/list/algo/Append.h>
-//#include <tlp/list/algo/Erase.h>
-//#include <tlp/list/algo/EraseAll.h>
-//#include <tlp/list/algo/Unique.h>
-//#include <tlp/list/algo/Replace.h>
-//#include <tlp/list/algo/ReplaceAll.h>
-//#include <tlp/list/algo/Any.h>
-//#include <tlp/list/algo/All.h>
-//#include <tlp/list/algo/Filter.h>
+#include <tlp/list/algo/Erase.h>
+#include <tlp/list/algo/EraseAll.h>
+#include <tlp/list/algo/Unique.h>
+#include <tlp/list/algo/Replace.h>
+#include <tlp/list/algo/ReplaceAll.h>
+#include <tlp/list/algo/Any.h>
+#include <tlp/list/algo/All.h>
+#include <tlp/list/algo/Filter.h>
 //#include <tlp/list/algo/Map.h>
 //#include <tlp/list/algo/Fold.h>
 //#include <tlp/list/algo/Sort.h>
@@ -128,79 +128,91 @@ FIXTURE(TestListBaseAlgo)
 
         ASSERT_EQ(__append(List, __type_list(char, long)), Expected);
     };
-//
-//    TEST("erase a type from a list")
-//    {
-//        using List = __erase(__type_list(int, short, long), short);
-//        using Expected = __type_list(int, long);
-//
-//        ASSERT_EQ(List, Expected);
-//    };
-//
-//    TEST("erase all the same type from a list")
-//    {
-//        using List = __erase_all(__type_list(short, int, short, long, short), short);
-//        using Expected = __type_list(int, long);
-//
-//        ASSERT_EQ(List, Expected);
-//    };
-//
-//    TEST("remove all the duplicated type from a list")
-//    {
-//        using List = __unique(__type_list(short, int, short, int, long, short, long));
-//        using Expected = __type_list(short, int, long);
-//
-//        ASSERT_EQ(List, Expected);
-//    };
-//
-//    TEST("replace a type in a given list")
-//    {
-//        using List = __replace(__type_list(int, short, long, short), short, int);
-//        using Expected = __type_list(int, int, long, short);
-//
-//        ASSERT_EQ(List, Expected);
-//    };
-//
-//    TEST("replace all the same type in a given list")
-//    {
-//        using List = __replace_all(__type_list(int, short, long, short), short, int);
-//        using Expected = __type_list(int, int, long, int);
-//
-//        ASSERT_EQ(List, Expected);
-//    };
+
+    TEST("erase a type from an empty list")
+    {
+        ASSERT_EQ(__erase(__empty_list(), short), __empty_list());
+    };
+
+    TEST("erase an none existed type from a list")
+    {
+        using List = __type_list(int, short, long);
+
+        ASSERT_EQ(__erase(List, char), List);
+    };
+
+    TEST("erase a type from a list")
+    {
+        using List = __type_list(int, short, long);
+        using Expected = __type_list(int, long);
+
+        ASSERT_EQ(__erase(List, short), Expected);
+    };
+
+    TEST("erase all the same type from a list")
+    {
+        using List = __type_list(short, int, short, long, short);
+        using Expected = __type_list(int, long);
+
+        ASSERT_EQ(__erase_all(List, short), Expected);
+    };
+
+    TEST("remove all the duplicated type from a list")
+    {
+        using List = __type_list(short, int, short, int, long, short, long);
+        using Expected = __type_list(short, int, long);
+
+        ASSERT_EQ(__unique(List), Expected);
+    };
+
+    TEST("replace a type in a given list")
+    {
+        using List = __type_list(int, short, long, short);
+        using Expected = __type_list(int, int, long, short);
+
+        ASSERT_EQ(__replace(List, short, int), Expected);
+    };
+
+    TEST("replace all the same type in a given list")
+    {
+        using List = __type_list(int, short, long, short);
+        using Expected = __type_list(int, int, long, int);
+
+        ASSERT_EQ(__replace_all(List, short, int), Expected);
+    };
 };
-//
-//FIXTURE(TestAdvancedAlgo)
-//{
-//    template<typename T> struct IsLargerThan2Bytes{ enum { Value = sizeof(T) > 2 }; };
-//
-//    TEST("any one of the list satisfied the given prediction")
-//    {
-//        ASSERT_TRUE(__any(__type_list(char, short, int), IsLargerThan2Bytes));
-//    };
-//
-//    TEST("none of the list satisfied the given prediction")
-//    {
-//        ASSERT_FALSE(__any(__type_list(char, short), IsLargerThan2Bytes));
-//    };
-//
-//    TEST("all of the list satisfied the given prediction")
-//    {
-//        ASSERT_TRUE(__all(__type_list(int, long), IsLargerThan2Bytes));
-//    };
-//
-//    TEST("any of the type in list not satisfied the given prediction")
-//    {
-//        ASSERT_FALSE(__all(__type_list(int, long, short), IsLargerThan2Bytes));
-//    };
-//
-//    TEST("filter the list by the given prediction")
-//    {
-//        using List = __filter(__type_list(int, char, short, long), IsLargerThan2Bytes);
-//        using Expected = __type_list(int, long);
-//
-//        ASSERT_EQ(List, Expected);
-//    };
+
+FIXTURE(TestAdvancedAlgo)
+{
+    template<typename T> struct IsLargerThan2Bytes{ using Result = __bool((sizeof(T) > 2)); };
+
+    TEST("any one of the list satisfied the given prediction")
+    {
+        ASSERT_TRUE(__any(__type_list(char, short, int), IsLargerThan2Bytes));
+    };
+
+    TEST("none of the list satisfied the given prediction")
+    {
+        ASSERT_FALSE(__any(__type_list(char, short), IsLargerThan2Bytes));
+    };
+
+    TEST("all of the list satisfied the given prediction")
+    {
+        ASSERT_TRUE(__all(__type_list(int, long), IsLargerThan2Bytes));
+    };
+
+    TEST("any of the type in list not satisfied the given prediction")
+    {
+        ASSERT_FALSE(__all(__type_list(int, long, short), IsLargerThan2Bytes));
+    };
+
+    TEST("filter the list by the given prediction")
+    {
+        using List = __type_list(int, char, short, long);
+        using Expected = __type_list(int, long);
+
+        ASSERT_EQ(__filter(List, IsLargerThan2Bytes), Expected);
+    };
 //
 //    TEST("map the list by the given transform function")
 //    {
@@ -250,7 +262,7 @@ FIXTURE(TestListBaseAlgo)
 //
 //        ASSERT_EQ(__sort(List, Supper), Expected);
 //    };
-//};
+};
 //
 //FIXTURE(TestInheritsAggregateAlgo)
 //{

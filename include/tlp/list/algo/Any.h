@@ -3,7 +3,7 @@
 
 #include <tlp/base/NullType.h>
 #include <tlp/list/TypeElem.h>
-#include <tlp/bool/BoolType.h>
+#include <tlp/bool/algo/Select.h>
 
 TLP_NS_BEGIN
 
@@ -18,11 +18,11 @@ struct Any<NullType, Pred>
 template<typename Head, typename Tail, template<typename T> class Pred>
 struct Any<TypeElem<Head, Tail>, Pred>
 {
-    using Result = Select<Pred<Head>::Value, TrueType, Any<Tail, Pred>::Result>;
+    using Result = typename Select<typename Pred<Head>::Result, TrueType, typename Any<Tail, Pred>::Result>::Result;
 };
 
 TLP_NS_END
 
-#define __any(...)   typename TLP_NS<Any, __VA_ARGS__>::Result
+#define __any(...)   typename TLP_NS::Any<__VA_ARGS__>::Result
 
 #endif
