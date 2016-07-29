@@ -1,6 +1,7 @@
 #ifndef H2FBB703F_2DC3_46B1_9587_2A90DA15C335
 #define H2FBB703F_2DC3_46B1_9587_2A90DA15C335
 
+#include <tlp/test/Print.h>
 #include <tlp/base/algo/Value.h>
 #include <tlp/base/algo/Valid.h>
 #include <tlp/bool/algo/IsEqual.h>
