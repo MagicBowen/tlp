@@ -6,7 +6,6 @@
 #include <tlp/bool/algo/Select.h>
 #include <tlp/int/IntType.h>
 #include <tlp/func/Negative.h>
-#include <tlp/func/DefFunc.h>
 #include <tlp/func/Forward.h>
 #include <tlp/traits/IsBaseOf.h>
 #include <tlp/traits/IsConvertible.h>
@@ -186,7 +185,7 @@ FIXTURE(TestListBaseAlgo)
 
 FIXTURE(TestAdvancedAlgo)
 {
-    __def_func_1(IsLargerThan2Bytes, __bool((sizeof(_1) > 2)));
+    __func_forward_1(IsLargerThan2Bytes, __bool((sizeof(_1) > 2)));
 
     TEST("any one of the list satisfied the given prediction")
     {
@@ -210,7 +209,7 @@ FIXTURE(TestAdvancedAlgo)
 
     TEST("transform two type list to a third list")
     {
-        __def_func_2(IsPointerOf, __is_eq(_1, _2*));
+        __func_forward_2(IsPointerOf, __is_eq(_1, _2*));
 
         using List1 = __type_list(int*, char, long**, short*);
         using List2 = __type_list(int, char, long*, int);
@@ -229,7 +228,7 @@ FIXTURE(TestAdvancedAlgo)
 
     TEST("map the list to it's size value list")
     {
-        __def_func_1(TypeSize, __int(sizeof(_1)));
+        __func_forward_1(TypeSize, __int(sizeof(_1)));
 
         using List = __type_list(int, char, short, long);
         using Expected = __value_list(4, 1, 2, 8);
@@ -239,7 +238,7 @@ FIXTURE(TestAdvancedAlgo)
 
     TEST("map the type in list to it's twice pointer type list")
     {
-        __def_func_1(TransToPointer, _1*);
+        template<typename T> struct TransToPointer { using Result = T*; };
 
         using List = __type_list(int, const char);
         using Expected = __type_list(int**, const char**);
@@ -249,7 +248,7 @@ FIXTURE(TestAdvancedAlgo)
 
     TEST("fold the list by the given accumulate function")
     {
-        __def_func_2(SumSize, __plus(_1, __int(sizeof(_2))));
+        __func_forward_2(SumSize, __plus(_1, __int(sizeof(_2))));
 
         using List = __type_list(int, char, long);
 
@@ -258,7 +257,7 @@ FIXTURE(TestAdvancedAlgo)
 
     TEST("sort a list by the given size compared rule")
     {
-        __forward_2(LargerSizeType, TLP_NS::Select<__bool((sizeof(_1) > sizeof(_2))), _1, _2>);
+        __func_forward_2(LargerSizeType, TLP_NS::Select<__bool((sizeof(_1) > sizeof(_2))), _1, _2>);
 
         using List = __type_list(char, long, short, long, int);
         using Expected = __type_list(long, long, int, short, char);
@@ -274,7 +273,7 @@ FIXTURE(TestAdvancedAlgo)
         struct Leaf2 : Branch {};
         struct Leaf3 : Branch {};
 
-        __forward_2(Supper, TLP_NS::Select<__is_base_of(_1, _2), _1, _2>);
+        __func_forward_2(Supper, TLP_NS::Select<__is_base_of(_1, _2), _1, _2>);
 
         using List = __type_list(Branch, Leaf2, Base, Leaf3, Leaf1);
         using Expected = __type_list(Base, Branch, Leaf2, Leaf3, Leaf1);

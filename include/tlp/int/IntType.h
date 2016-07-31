@@ -9,10 +9,11 @@ template<int V>
 struct IntType
 {
     enum { Value = V };
+    using Result = IntType<V>;
 };
 
 TLP_NS_END
 
-#define __int(value)    TLP_NS::IntType<value>
+#define __int(value)    typename TLP_NS::IntType<value>::Result
 
 #endif

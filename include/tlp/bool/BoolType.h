@@ -11,12 +11,14 @@ template<>
 struct BoolType<true>
 {
     enum { Value = true };
+    using Result = BoolType<true>;
 };
 
 template<>
 struct BoolType<false>
 {
     enum { Value = false };
+    using Result = BoolType<false>;
 };
 
 using TrueType = BoolType<true>;
@@ -24,8 +26,8 @@ using FalseType = BoolType<false>;
 
 TLP_NS_END
 
-#define __bool(...)    TLP_NS::BoolType<__VA_ARGS__>
-#define __true()       TLP_NS::TrueType
-#define __false()      TLP_NS::FalseType
+#define __bool(...)    typename TLP_NS::BoolType<__VA_ARGS__>::Result
+#define __true()       typename TLP_NS::TrueType::Result
+#define __false()      typename TLP_NS::FalseType::Result
 
 #endif
