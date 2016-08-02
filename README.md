@@ -6,7 +6,9 @@
 
 TLP is a C\++ template programming package including below:
 
-- Compile-time data structure `TypeList`
+- Compile-time base type `IntType`, `BoolType` and algorithms on them;
+
+- Compile-time data structure `TypeList`;
 
 - Base algorithms on `TypeList` such as  `Length`, `Append`, `Erase`, `Replace`...
 
@@ -14,7 +16,7 @@ TLP is a C\++ template programming package including below:
 
 - Template meta programming utils such as `IsEqual`, `IfThenElse`, `IsConvertible`, `IsBaseOf`...
 
-- A pure compile-time test framework for C\++ template meta programming
+- A pure compile-time test framework for C\++ template meta programming;
 
 To learn more about tlp and how to do C\++ template meta programming,  please visit the doc folder and view the  tests of tlp!
 
@@ -41,7 +43,7 @@ sudo make install
 
 Tlp use its own test framework for testing.  
 
-Just compile the testcases for testing. If all tests compile ok, it means that all tests pass.
+Just compile the testcases for testing. If all tests are compiled ok, it means that all tests pass.
 
 ~~~ bash
 cd tlp
