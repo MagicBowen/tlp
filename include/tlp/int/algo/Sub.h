@@ -5,16 +5,16 @@
 
 TLP_NS_BEGIN
 
-template<typename T1, typename T2> struct Minus;
+template<typename T1, typename T2> struct Sub;
 
 template<int V1, int V2>
-struct Minus<IntType<V1>, IntType<V2>>
+struct Sub<IntType<V1>, IntType<V2>>
 {
     using Result = IntType<V1 - V2>;
 };
 
 TLP_NS_END
 
-#define __minus(...)    typename TLP_NS::Minus<__VA_ARGS__>::Result
+#define __sub(...)    typename TLP_NS::Sub<__VA_ARGS__>::Result
 
 #endif

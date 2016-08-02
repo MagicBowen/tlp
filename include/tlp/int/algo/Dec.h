@@ -5,16 +5,16 @@
 
 TLP_NS_BEGIN
 
-template<typename T> struct Prev;
+template<typename T> struct Dec;
 
 template<int V>
-struct Prev<IntType<V>>
+struct Dec<IntType<V>>
 {
     using Result = IntType<V - 1>;
 };
 
 TLP_NS_END
 
-#define __prev(...)    typename TLP_NS::Prev<__VA_ARGS__>::Result
+#define __dec(...)    typename TLP_NS::Dec<__VA_ARGS__>::Result
 
 #endif

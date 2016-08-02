@@ -248,7 +248,7 @@ FIXTURE(TestAdvancedAlgo)
 
     TEST("fold the list by the given accumulate function")
     {
-        __func_forward_2(SumSize, __plus(_1, __int(sizeof(_2))));
+        __func_forward_2(SumSize, __add(_1, __int(sizeof(_2))));
 
         using List = __type_list(int, char, long);
 

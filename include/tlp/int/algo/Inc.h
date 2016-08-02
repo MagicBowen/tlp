@@ -5,16 +5,16 @@
 
 TLP_NS_BEGIN
 
-template<typename T> struct Next;
+template<typename T> struct Inc;
 
 template<int V>
-struct Next<IntType<V>>
+struct Inc<IntType<V>>
 {
     using Result = IntType<V + 1>;
 };
 
 TLP_NS_END
 
-#define __next(...)    typename TLP_NS::Next<__VA_ARGS__>::Result
+#define __inc(...)    typename TLP_NS::Inc<__VA_ARGS__>::Result
 
 #endif
