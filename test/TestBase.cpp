@@ -1,4 +1,4 @@
-#include <tlp/test/Test.h>
+#include <tlp/test/Test.hpp>
 #include <tlp/base/EmptyType.h>
 #include <tlp/base/NullType.h>
 #include <tlp/base/algo/Valid.h>

@@ -1,4 +1,4 @@
-#include <tlp/test/Test.h>
+#include <tlp/test/Test.hpp>
 #include <tlp/int/IntType.h>
 #include <tlp/int/algo/Inc.h>
 #include <tlp/int/algo/Dec.h>

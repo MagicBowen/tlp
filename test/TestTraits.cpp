@@ -1,4 +1,4 @@
-#include <tlp/test/Test.h>
+#include <tlp/test/Test.hpp>
 #include <tlp/traits/IsConvertible.h>
 #include <tlp/traits/IsBaseOf.h>
 

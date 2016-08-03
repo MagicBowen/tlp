@@ -1,12 +1,9 @@
-#ifndef H2FBB703F_2DC3_46B1_9587_2A90DA15C335
-#define H2FBB703F_2DC3_46B1_9587_2A90DA15C335
+#ifndef H95E6A20D_63A5_4915_B14F_CD5A080E9728
+#define H95E6A20D_63A5_4915_B14F_CD5A080E9728
 
-#include <tlp/test/Print.h>
 #include <tlp/base/algo/Value.h>
 #include <tlp/base/algo/Valid.h>
 #include <tlp/bool/algo/IsEqual.h>
-#include <tlp/utils/UniqueName.h>
-#include <iostream>
 
 #define ASSERT_TRUE(T)                  \
 static_assert(__value(T), "TLP Error: expect "#T" be true, but be false!")
@@ -25,12 +22,5 @@ static_assert(__value(__is_eq(T, Expected)), "TLP Error: expect "#T" be equal to
 
 #define ASSERT_NE(T, Expected)          \
 static_assert(!(__value(__is_eq(T, Expected))), "TLP Error: expect "#T" be not equal to "#Expected"!")
-
-#define FIXTURE(Name) namespace _JOIN(TlpFixture_, Name)
-
-#define TEST(Name) struct UNIQUE_NAME(TlpTest_)
-
-#define TLP_RUN_ALL_TESTS()             \
-int main() { std::cout << "TLP RUN ALL TESTS OK!!!" << std::endl; return 0; }
 
 #endif
