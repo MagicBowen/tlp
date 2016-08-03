@@ -9,7 +9,7 @@ using TlpSetUp = TLP_NS::EmptyType;
 template<typename TEST> struct TlpTearDown {};
 
 ////////////////////////////////////////////////////////////////////////
-#define FIXTURE(name)       namespace _JOIN(TlpFixture_, name)
+#define FIXTURE(name)       namespace _JOIN(TlpTestFixture_, name)
 
 ////////////////////////////////////////////////////////////////////////
 #define SETUP()             struct TlpSetUp
@@ -28,7 +28,7 @@ template<typename TLP_TEST> struct TlpTearDown  \
 
 #define TEARDOWN_END()                      };}};
 
-#define __test_refer(...)   typename TLP_TEST::__VA_ARGS__
+#define __test_refer(...)       typename TLP_TEST::__VA_ARGS__
 #define __test_invoke(op, ...)  typename TLP_TEST:: template op<__VA_ARGS__>::Result
 
 ////////////////////////////////////////////////////////////////////////
