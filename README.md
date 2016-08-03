@@ -1,4 +1,4 @@
-# TLP : C\++ Template Programming on Type List
+# TLP : Learn how to do template meta programming through C++11!
 
 ***
 
