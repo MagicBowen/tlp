@@ -3,41 +3,46 @@
 
 #include <tlp/base/EmptyType.h>
 #include <tlp/utils/UniqueName.h>
-
-using TlpSetUp = TLP_NS::EmptyType;
-
-template<typename TEST> struct TlpTearDown {};
+#include <tlp/test/details/TestRegister.h>
 
 ////////////////////////////////////////////////////////////////////////
-#define FIXTURE(name)       namespace _JOIN(TlpTestFixture_, name)
+#define FIXTURE(name)                                   \
+TLP_NS::AutoFixtureRegister _JOIN(tlp_auto_fixture_register, name)(#name);   \
+namespace _JOIN(TlpTestFixture_, name)
 
 ////////////////////////////////////////////////////////////////////////
-#define SETUP()             struct TlpSetUp
+#define TEST_SETUP_NAME   TlpTestSetUp
+using   TEST_SETUP_NAME = TLP_NS::EmptyType;
 
-#define SETUP_BEGIN()       SETUP(){
-#define SETUP_END()         };
+#define SETUP()           struct TEST_SETUP_NAME
+#define SETUP_BEGIN()     SETUP(){
+#define SETUP_END()       };
 
 ////////////////////////////////////////////////////////////////////////
-#define TEARDOWN_BEGIN()                        \
-template<typename TLP_TEST> struct TlpTearDown  \
-{                                               \
-    TlpTearDown()                               \
-    {                                           \
-        struct TearDown: TLP_TEST               \
+#define TEST_TEARDOWN_NAME   TlpTestTearDown
+template<typename TLP_TEST>  struct TEST_TEARDOWN_NAME {};
+
+#define TEARDOWN_BEGIN()                                \
+template<typename TLP_TEST>  struct TEST_TEARDOWN_NAME  \
+{                                                       \
+    TEST_TEARDOWN_NAME()                                \
+    {                                                   \
+        struct TearDown: TLP_TEST                       \
         {
 
-#define TEARDOWN_END()                      };}};
+#define TEARDOWN_END()                              };}};
 
 #define __test_refer(...)       typename TLP_TEST::__VA_ARGS__
 #define __test_invoke(op, ...)  typename TLP_TEST:: template op<__VA_ARGS__>::Result
 
 ////////////////////////////////////////////////////////////////////////
-#define __TEST_NAME(id)     _JOIN(tlp_test_, id)
+#define __TEST_NAME(id)         _JOIN(tlp_test_, id)
 
-#define __DEF_TEST(name, id)                    \
-struct __TEST_NAME(id);                         \
-TlpTearDown<__TEST_NAME(id)> _JOIN(tlp_teardown_, id);\
-struct __TEST_NAME(id) : TlpSetUp               \
+#define __DEF_TEST(name, id)                                        \
+struct __TEST_NAME(id);                                             \
+TEST_TEARDOWN_NAME<__TEST_NAME(id)> _JOIN(tlp_test_teardown_, id);  \
+TLP_NS::AutoTestRegister _JOIN(tlp_auto_test_register, id)(#name);  \
+struct __TEST_NAME(id) : TEST_SETUP_NAME
 
 #define TEST(name)   __DEF_TEST(name, UNIQUE_ID)
 

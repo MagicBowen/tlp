@@ -4,6 +4,6 @@
 #include <tlp/test/details/Print.h>
 #include <tlp/test/details/Asserter.h>
 #include <tlp/test/details/Fixture.h>
-#include <tlp/test/details/Run.h>
+#include <tlp/test/details/TestReporter.h>
 
 #endif

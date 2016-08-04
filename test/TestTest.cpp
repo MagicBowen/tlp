@@ -41,12 +41,12 @@ FIXTURE(TestWithSetUpAndTearDown)
         ASSERT_EQ(Result, Expected);
     TEARDOWN_END()
 
-    TEST("test 1")
+    TEST("test case 1 with the same setup and teardown")
     {
         __func_forward_2(Op, __add(_1, _2));
     };
 
-    TEST("test 2")
+    TEST("test case 2 with the same setup and teardown")
     {
         __func_forward_2(Op, __mul(_1, _2));
     };
