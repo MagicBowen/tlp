@@ -30,7 +30,8 @@ private:
         allTestsNum += testNum;
 
         std::cout << __GREEN << "[----------] "
-                  << __WHITE << testNum << " tests from " << name << std::endl;
+                  << __WHITE << testNum << " tests from " << name << std::endl
+                  << __GREEN << "[----------] " << std::endl;
     }
 
     void onFixtureEnd(std::string name, const size_t testNum) override
@@ -50,7 +51,7 @@ private:
     void onTestReportStart()
     {
         std::cout << __GREEN << "[==========] "
-                  << __WHITE << "List all test cases:" << std::endl;
+                  << __WHITE << "List all test cases:" << std::endl << std::endl;
     }
 
     void onTestReportEnd()
