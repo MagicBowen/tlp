@@ -10,15 +10,15 @@ template<typename T, typename U>
 struct IsConvertible
 {
 private:
-    using Small = char;
-    struct Big { char dummy[2]; };
+    using  Yes = char;
+    struct No { char dummy[2]; };
 
-    static Small Test(U);
-    static Big   Test(...);
-    static T MakeT();
+    static Yes Test(U);
+    static No  Test(...);
+    static T self();
 
 public:
-    using Result = BoolType<sizeof(Test(MakeT())) == sizeof(Small)>;
+    using Result = BoolType<sizeof(Test(self())) == sizeof(Yes)>;
 };
 
 TLP_NS_END
