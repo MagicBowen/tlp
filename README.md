@@ -61,7 +61,7 @@ make
 
 ### Run Samples
 
-Samples include examples for how to using tlp. 
+Samples include examples for how to using TLP. 
 
 Compile and run all the samples:
 
