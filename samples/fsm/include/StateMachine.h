@@ -7,6 +7,7 @@
 #include <tlp/bool/algo/IsEqual.h>
 #include <tlp/func/Forward.h>
 #include <typeinfo>
+#include <iostream>
 
 namespace fsm
 {

@@ -1,4 +1,5 @@
 #include <VisitorDef.h>
+#include <iostream>
 
 namespace
 {
