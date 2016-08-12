@@ -2,7 +2,7 @@
 #include <tlp/bool/algo/Not.h>
 #include <tlp/bool/algo/And.h>
 #include <tlp/bool/algo/Or.h>
-#include <tlp/bool/algo/Select.h>
+#include <tlp/bool/algo/IfThenElse.h>
 
 FIXTURE(TestBool)
 {
@@ -45,7 +45,7 @@ FIXTURE(TestBool)
 
     TEST("select based on bool type")
     {
-        ASSERT_EQ(__select(__true(), int, char), int);
-        ASSERT_EQ(__select(__false(), int, char), char);
+        ASSERT_EQ(__if(__true(), int, char), int);
+        ASSERT_EQ(__if(__false(), int, char), char);
     };
 };

@@ -3,7 +3,7 @@
 #include <tlp/base/algo/Valid.h>
 #include <tlp/bool/BoolType.h>
 #include <tlp/bool/algo/IsEqual.h>
-#include <tlp/bool/algo/Select.h>
+#include <tlp/bool/algo/IfThenElse.h>
 #include <tlp/int/IntType.h>
 #include <tlp/func/Negative.h>
 #include <tlp/func/Forward.h>
@@ -257,7 +257,7 @@ FIXTURE(TestAdvancedAlgo)
 
     TEST("sort a list by the given size compared rule")
     {
-        __func_forward_2(LargerSizeType, TLP_NS::Select<__bool((sizeof(_1) > sizeof(_2))), _1, _2>);
+        __func_forward_2(LargerSizeType, TLP_NS::IfThenElse<__bool((sizeof(_1) > sizeof(_2))), _1, _2>);
 
         using List = __type_list(char, long, short, long, int);
         using Expected = __type_list(long, long, int, short, char);
@@ -273,7 +273,7 @@ FIXTURE(TestAdvancedAlgo)
         struct Leaf2 : Branch {};
         struct Leaf3 : Branch {};
 
-        __func_forward_2(Supper, TLP_NS::Select<__is_base_of(_1, _2), _1, _2>);
+        __func_forward_2(Supper, TLP_NS::IfThenElse<__is_base_of(_1, _2), _1, _2>);
 
         using List = __type_list(Branch, Leaf2, Base, Leaf3, Leaf1);
         using Expected = __type_list(Base, Branch, Leaf2, Leaf3, Leaf1);

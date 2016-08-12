@@ -4,7 +4,7 @@
 #include <tlp/list/TypeElem.h>
 #include <tlp/base/algo/Valid.h>
 #include <tlp/base/algo/Value.h>
-#include <tlp/bool/algo/Select.h>
+#include <tlp/bool/algo/IfThenElse.h>
 
 TLP_NS_BEGIN
 
@@ -29,7 +29,7 @@ private:
     using Temp = typename IndexOf<Tail, T>::Result;
 
 public:
-    using Result = typename Select<typename Valid<Temp>::Result, IntType<Value<Temp>::Result + 1>, NullType>::Result;
+    using Result = typename IfThenElse<typename Valid<Temp>::Result, IntType<Value<Temp>::Result + 1>, NullType>::Result;
 };
 
 TLP_NS_END

@@ -1,4 +1,4 @@
-# TLP : Learnning template meta programming by C++11!
+# TLP : learning template meta programming by C++11!
 
 ***
 

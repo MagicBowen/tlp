@@ -3,7 +3,7 @@
 
 #include <tlp/base/NullType.h>
 #include <tlp/list/TypeElem.h>
-#include <tlp/bool/algo/Select.h>
+#include <tlp/bool/algo/IfThenElse.h>
 
 TLP_NS_BEGIN
 
@@ -18,7 +18,7 @@ struct Filter<NullType, Pred>
 template<typename Head, typename Tail, template<typename T> class Pred>
 struct Filter<TypeElem<Head, Tail>, Pred>
 {
-    using Result = typename Select< typename Pred<Head>::Result,
+    using Result = typename IfThenElse< typename Pred<Head>::Result,
                                     TypeElem<Head, typename Filter<Tail, Pred>::Result>,
                                     typename Filter<Tail,Pred>::Result>::Result;
 };
