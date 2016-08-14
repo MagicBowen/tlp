@@ -1,6 +1,6 @@
 # TLP: learning template meta programming by C++11
 
-## Preface
+## Forward
 
 熟悉C\++的程序员都知道，C\++是一门多范式编程语言，支持面向过程、面向对象、泛型编程以及函数式编程范式。然而提到C\++模板元编程，在很多人心里这却似乎是C\++里的一种黑魔法：它很难学习，一旦进入这个领域曾经那些熟悉的东西（if，for...）都不再灵验；它很强大，但现实中却鲜见有人用它来解决实际问题，除过偶尔在一些编码练习中被某些C\++狂热粉作为奇淫巧技拿出来秀肌肉。
 
@@ -55,15 +55,49 @@ C\++模板元编程当年被提出来的时候，函数式编程还没有像今�
 
 ## Quick Start
 
-### 模板简介
+### concepts of templates
 
 模板最开始作为一种更加安全的宏被引入C\++，用来解决代码在不同类型间复用的问题。
+下面我们以类模板举例，介绍一些我们后面会用到的模板基本概念。
+
+~~~cpp
+#include <vector>
+#include <stdexcept>
+
+template<typename T>
+struct Stack
+{
+    void push(const T& elem)
+    {
+        elems.push_back(elem);
+    }
+
+    T pop()
+    {
+        if(empty()) throw std::out_of_range("Stack<>::pop: empty!");
+
+        auto elem = elems.back();
+        elems.pop_back();
+        return elem;
+    }
+
+    bool empty() const
+    {
+        return elems.empty();
+    }
+
+private:
+    std::vector<T> elems;
+};
+~~~
+
+	引入容器泛化
 
 模板特化；
 
-偏特化；
+	自定义容器，没有push_back
 
-全特化；
+偏特化；
 
 编译器选择；
 
@@ -75,9 +109,19 @@ C\++模板元编程当年被提出来的时候，函数式编程还没有像今�
 
 ### 和函数式对比
 
+不可变性
+
+enum and using
+
 模式匹配和递归
 
-不可变性
+高阶函数
+
+一切都是类型
+
+一切都是函数
+
+柯理化
 
 ### 总结：不同阶段的C\++
 
@@ -108,6 +152,8 @@ C\++模板元编程当年被提出来的时候，函数式编程还没有像今�
 ### 类型推断
 
 ## Samples
+
+### 内存分配自动分派
 
 ### Dates：类型判断
 
