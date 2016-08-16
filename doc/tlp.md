@@ -320,7 +320,7 @@ struct Stack<T, Array>
 
 #### 模板的非类型参数
 
-前面的例子中，我们分别使用了类型和模板作为类模板的参数。事实上，模板还支持非类型模板参数。
+前面的例子中，我们分别使用了类型和模板作为类模板的参数。除此之外，模板还支持非类型模板参数。
 
 如下用数组实现Stack的模板定义中，模板的第二个参数是一个int型常量，用于定义数组的最大长度。
 
@@ -337,7 +337,7 @@ private:
 };
 ~~~
 
-一般来说，模板的非类型参数只能是整型常量（包括enum），或者指向外部链接的指针（包括函数指针，成员函数指针）。到目前为止还不支持浮点数，对于字符串常量也不支持，但是可以支持具有外部链接的字符串常量指针。
+一般来说，模板的非类型参数只能是整型常量（包括enum），或者指向外部链接的指针（包括函数指针，类的成员函数指针）。到目前为止还不支持浮点数，对于字符串常量也不支持，但是可以支持具有外部链接的字符串常量指针。
 
 例如对于下面的模板定义：
 
@@ -349,33 +349,33 @@ struct Token
 };
 ~~~
 
-如下使用都会编译错误：
+下面的用法都产生编译错误：
 
 ~~~cpp
 	Token<“Hello”> tocken；
 ~~~
 
 ~~~cpp
-    const char* s = "Hello";
-    Token<s> tocken;
+    const char* str = "Hello";
+    Token<str> tocken;
 ~~~
 
 而如下是可以正确编译通过的：
 
 ~~~cpp
-extern const char s[] = "Hello";
+extern const char str[] = "Hello";
 
-Token<s> token;
+Token<str> token;
 std::cout << tocken.name << std::endl;
 ~~~
 
-总结一下，模板的参数支持一下类型：
+总结一下，模板的参数支持以下类型：
 
 - 类型参数；
 	使用typename或者class指示。
 
 - 非类型参数；
-	整型常量，或者指向外部链接的指针。
+	整型常量（包括enum），或者指向外部链接的指针（包括函数指针、类的成员函数指针，以及具有外部链接的字符串常量指针）。
 
 - 模板参数；
 	使用`template<...> class XXX`的形式指示。
@@ -384,25 +384,321 @@ std::cout << tocken.name << std::endl;
 
 #### 利用模板做编译期计算
 
-当模板的形参被实参替换时，模板会进行编译期计算。由于模板的参数支持类型参数和非类型参数，所以模板在编译期可以进行两类计算：类型计算和数值计算
-
-##### 类型计算
-typedef
-using
+和函数求值类似，当模板的形参被实参替换时，模板会进行编译期计算。由于模板的参数支持类型参数和非类型参数，所以模板在编译期可以进行两类计算：类型计算和数值计算。
 
 ##### 数值计算
-enum
-static const
 
-### 递归模板
+模板的数值计算发生在编译期，一般计算的参数由模板参数输入，计算的结果由模板内部的enum定义或者static const的整形成员保存。
 
-计算阶乘
+如下我们实现编译期的整数加法：
+
+~~~cpp
+template<int X, int Y>
+struct Plus
+{
+    enum { Value = X + Y };
+};
+~~~
+
+如下我们使用这个类模板进行加法运算：
+
+~~~cpp
+int main()
+{
+	std::cout << Plus<3, 4>::Value << std::endl;
+    return 0;
+}
+~~~
+
+上面代码会打印出7。注意这里对7的计算发生在编译期，当我们打印的时候结果其实已经是计算好了的。
+
+为了验证我们的说法，我们想办法让结果在C\++的编译过程中就打印出来。
+
+~~~cpp
+template<int Value>
+struct Print
+{
+    operator char()
+    {
+        return Value + 0xFF; // INVOKE OVERFLOW WARNNING LOG !
+    }
+};
+
+#define __print(token, ...) char print_value_##tocken = Print<__VA_ARGS__>()
+~~~
+
+由于C\++的编译期计算无法直接操作IO，我们只能想办法通过C\++的编译器将计算结果在编译信息中打印出来。如上`__print`宏定义中将一个Print<Value>的对象隐式转换成一个char类型，赋值给一个临时的char变量。由于Print的隐式转换函数中将Value和0xFF进行相加，导致编译器会产生一个char类型值溢出告警，从而将Value的值打印出来。
+
+我们这时可以删除main函数，然后直接在任一cpp文件中包含上述Plus和Print模板的头文件，然后写下如下语句
+
+~~~cpp
+// TestPrint.cpp
+// should include the header files of Plus and Print
+__print(Plus_3_4, Plus<3, 4>::Value);
+~~~
+
+在gcc4.8.4上，编译器编译到该文件打印如下：
+
+~~~bash
+TestPrint.cpp: In instantiation of 'Print<Value>::operator char()[with int value = 7]'：
+TestPrint.cpp: required form here
+TestPrint.cpp: warning: overflow in implicit constant conversion [-Woverflow]
+~~~
+
+可以看到计算结果是在编译告警`Print<Value>::operator char()[with int value = 7]`中打印出来的。
+
+由于一个文件中`__print`可能会使用多次，所以它的第一个参数token是为了让每个临时的char变量的名字不重复。我们可以优化`__print`的定义，避免用户传递一个token，而让编译器帮我们产生一个不会重复的名字。如下：
+
+~~~cpp
+#define __print(...) char UNIQUE_NAME(print_value_) = Print<__VA_ARGS__>()
+~~~
+
+我们使用了`UNIQUE_NAME`宏来为临时的char变量产生不重复的名字，`UNIQUE_NAME`的定义如下。这里使用了一个小技巧，将当前行号拼接到一个固定的token中产生了一个不重复的名字。
+
+~~~cpp
+#define __DO_JOIN(symbol1, symbol2) symbol1##symbol2
+#define _JOIN(symbol1, symbol2) __DO_JOIN(symbol1, symbol2)
+
+# define UNIQUE_NAME(prefix) _JOIN(prefix, __LINE__)
+~~~
+
+现在我们可以这样使用`__print`了：`__print(Plus<3, 4>::Value);`。
+
+对于类模板Plus我们可以这样理解：它就如同一个函数，`Plus`是函数名，它声明需要两个int型的入参，分别是形参`X`和`Y`。它的返回值是内部定义的`Value`。对它的调用方式是`Plus<3, 4>::Value`，尖括号中传递实参，通过调用`Value`获得计算结果。只不过这个函数的计算发生在C\++编译期，为了和运行期函数进行区分，编译期的函数都用尖括号而非圆括号。
+
+C\++这种编译期的函数其实是支持多返回值的，例如我们修改上例的代码，一次计算出整数加减乘除的所有结果。
+
+~~~cpp
+template<int X, int Y>
+struct Caculate
+{
+    enum
+    {
+        Sum = X + Y,
+        Dec = X - Y,
+        Mul = X * Y,
+        Div = X / Y
+    };
+};
+~~~
+
+可以使用`Caculate<10, 2>::Sum`，`Caculate<10, 2>::Dec`，`Caculate<10, 2>::Mul`，`Caculate<10, 2>::Div`分别获得10和2的加减乘除的结果。
+
+这种多返回值计算在我们后续介绍元编程时使用的并不多。其一是当只想要其中一个计算结果时，所有的结果其实是一起被计算了，会存在额外的计算开销。另外，多个返回值必须每个的名字都不一样，这样就对我们后续介绍编译期的函数组合能力造成障碍。
+
+除了用enum保存编译期的数值计算结果，还可以用 static const成员变量。上面例子修改如下效果一样。
+
+~~~cpp
+template<int X, int Y>
+struct Plus
+{
+    static const int Value = X + Y;
+};
+~~~
+
+由于有些编译器对static const在模板的计算中存在问题，需要为其分配内存，所以本文对于编译期数值计算结果保存一律使用enum。
+
+##### 类型计算
+
+除了可以计算数值，编译期更具有价值的是类型计算。我们可以将编译期常量和类型都看做是编译期的可计算对象。
+
+我们知道模板的所有形参被实参替换后，模板自身就具现化为一个具体的类型了。但是模板自身具现化的这个类型对于我们想要的编译期类型计算来说缺少抽象能力。模板的类型计算结果一般保存在模板内部定义的嵌套类型中。
+
+模板内部定义嵌套类型的方法除了在模板内部定义类，更多的是使用typedef。
+
+例如如下我们定义了一个类模板，
+
+~~~cpp
+template<typename T>
+struct PointerOf
+{
+    typedef T* Type;
+};
+~~~
+
+该类模板内部定义了一个类型别名Type作为入参T的指针类型。
+
+如下我们可以这样使用这个模板：
+
+~~~cpp
+PointerOf<const char>::Type s = "Hello world!";
+std::cout << s << std::endl;
+~~~
+
+如同前面数值计算一样，我们可以这样理解`PointerOf`：`PointerOf`是函数名，`<typename T>`声明了形参T是一个类型，我们通过`Type`可以获得函数的返回值，也是一个类型。这个函数负责将输入类型转变为对应的指针类型。所以调用`PointerOf<const char>::Type`其实是和`const char *`本质上一样。
+
+我们定义的这个`PointerOf`似乎有些无聊，但是这是类型计算的基础，后面我们会逐渐看到它的威力。
+
+最后，C\++11标准用using关键字来专门定义类型别名，它的用法和定义变量的习惯类似，且功能比typedef强大得多（后面会看到），所以我们后续类型计算统一用using关键字定义类型别名。`PointerOf`的定义修改如下：
+
+~~~cpp
+template<typename T>
+struct PointerOf
+{
+	using Type = T*;
+};
+~~~
+
+### 模板递归
+
+模板可以被递归调用，在模板递归的过程中，可以执行前面我们提到的两种编译期计算：数值计算和类型计算。
+
+下面我们用模板递归来做数值计算，在编译期计算N的阶乘。
+
+~~~cpp
+template<int N>
+struct Factorial
+{
+    enum { Value = N * Factorial<N - 1>::Value };
+};
+
+template<>
+struct Factorial<1>
+{
+    enum { Value = 1 };
+};
+
+~~~
+
+可以看到，我们在主模板`template<int N> struct Factorial`的定义中，使用了模板自身`Factorial<N - 1>::Value`。编译器会一直用不同的`N - 1`的值来具现化主模板，一直到N变为1，这时选择Factorial的特化版本`template<> struct Factorial<1>`，内部的Value变为1，递归终止了。
+
+我们可以在编译期运行这个函数`__print(Factorial<5>::Value)`，可以看到编译器会打印出120。
+
+对于上面的例子，我们看到是通过模板特化来终止递归的。事实上我们对比一下Haskell语言中计算阶乘的函数实现：
+
+~~~haskell
+factorial :: Int -> Int
+factorial n = n * factorial (n - 1)
+factorial 1 = 1
+~~~
+
+Haskell是一门纯函数式语言，它通过模式匹配还进行条件选择，通过递归来进行循环控制。对于上面的factorial定义，当入参是1的时候模式匹配会选择到`factorial 1 = 1`实现，否则匹配到`factorial n = n * factorial (n - 1)`的递归实现。
+
+我们看到，上面我们使用C\++中模板的方式和Haskell中定义函数是如此的类似。编译器对模板的特化版本选择就相当是Haskell在做模式匹配，而两者的循环控制都是通过递归来完成。已经证明模板的这种编译时计算能力就是一种纯函数式编程范式，是图灵完备的！
+
+不同的是，C\++这种编译时计算支持的计算对象主要是整形和类型。在现实场景下，对我们更有价值的是类型计算。
+
+下面我们通过继续演进前面那个无聊的类型计算的例子来规范C\++模板的计算方式，让其能够和函数式计算更加地一致，最大程度发挥编译期函数式计算的威力。
+
+前面我们实现了PointerOf，它对于传进的任意类型T计算出T的指针类型。如果我们想要实现一个能够计算T的指针的指针类型的模板函数，怎么做？
+
+一种做法是直接定义：
+
+~~~cpp
+template<typename T>
+struct Pointer2Of
+{
+	using Result = T**;
+};
+~~~
+
+在这里，我们为了让结果类型更加能体现出是函数的返回值，所以计算结果的类型统一起名为`Result`。现在可以这样使用：
+
+~~~cpp
+int* pi;
+Pointer2Of<int>::Result ppi = &pi;
+~~~
+
+还有一种实现是嵌套使用PointerOf：
+
+~~~cpp
+template<typename T>
+struct PointerOf
+{
+	using Result = T*;
+};
+~~~
+
+~~~cpp
+template<typename T>
+struct Pointer2Of
+{
+	using Result = typename PointerOf<typename PointerOf<T>::Result>::Result;
+};
+~~~
+
+上面我们通过嵌套使用两次PointerOf来完成Pointer2Of的实现。在Pointer2Of中我们两次使用`PointerOf<...>::Result`时前面都使用了typename关键字。原因是C\++标准要求一旦PointerOf后面的尖括号中不是具体类型的话，那么使用`::`访问PointerOf的内部类型Result时必须使用typename显示指明`PointerOf<...>::Result`是一个类型。所以完整的我们在Pointer2Of中是这样使用PointerOf的：`typename PointerOf<...>::Result`。
+
+和Haskell相比，我们必须得承认，C\++的这种函数式编程的书写确实太繁琐了，为了能够化简使用者，我们采用宏封装一下PointerOf：
+
+~~~cpp
+#define __pointer(...) typename PointerOf<__VA_ARGS__>::Result
+~~~
+
+这样Pointer2Of的定义可以简化如下：
+
+~~~cpp
+template<typename T>
+struct Pointer2Of
+{
+	using Result = __pointer(__pointer(T));
+};
+~~~
+
+这样看起来好看多了，而`__pointer(T)`中写法更像是在调用一个函数。实施上C\++11标准中using关键字可以让我们更简单地定义Pointer2Of。
+
+~~~cpp
+template<typename T>
+using Pointer2Of = __pointer(__pointer(T));
+~~~
+
+这样实现后，Pointer2Of内部不再有Result类型了，客户的使用变成了`Pointer2Of<int> ppi = &pi`。这对客户似乎简单了，但是后面我们将会看到这对于我们这种编译期函数的组合能力来说却变差了。
+
+接着上面的例子，此刻我们想要定义指向指针的指针的指针的指针类型，怎么办？或者说我们想要一种能够任意指定指针层数的算法。
+
+我们手里已经有了一个PointerOf函数，我们需要一个能够将其对一个指定类型反复施展指定次数的函数。
+
+下面我们实现了一个通用的Times模板，它可以对一个指定类型T反复调用另一个模板N次。
+
+~~~cpp
+template<int N, typename T, template<typename> class Func>
+struct Times
+{
+    using Result = typename Func<typename Times<N - 1, T, Func>::Result>::Result;
+};
+
+template<typename T, template<typename> class Func>
+struct Times<1, T, Func>
+{
+    using Result = typename Func<T>::Result;
+};
+~~~
+
+上面的代码中，Times有三个参数，第一个参数是次数N，第二个参数是类型T，第三个参数是一个接受一个类型参数的模板Func。Times采用了递归实现，当N为1时，Result就是`typename Func<T>::Result`，否则就递归调用`Func<typename Times<N - 1, T, Func>::Result>::Result`。这里Time假设Func的返回值类型保存在Result中。
+
+那么实现指向指针的指针的指针的指针类型，最终如下：
+
+~~~cpp
+int*** pppi;
+Times<4, int, PointerOf>::Result ppppi = &pppi;
+~~~
+
+可以看到，如果Pointer2Of使用早先那个非using定义的版本的话，我们还可以这样：
+
+~~~cpp
+int*** pppi;
+Times<2, int, Pointer2Of>::Result ppppi = &pppi;
+~~~
+
+现在看到我们对类模板进行约束固定用Result保存计算结果，使得我们将模板当做函数使用时的写法得到统一，这对于我们可以进行函数组合简直是必须的。后续我们把C\++中这种在编译期进行计算，靠Result返回计算结果的类模板，后续统一称作**元函数**（考虑到这种函数主要是为了支持C\++模板元编程，并且为了和C\++运行时函数进行区分，元函数的名称来自于《C++模板元编程》一书）。
+
+有了Times后，Pointer2Of的定义可以修改如下：
+
+~~~cpp
+template<typename T>
+struct Pointer2Of
+{
+    using Result = typename Times<2, T, PointerOf>::Result;
+};
+~~~
+
+最后再来看看Times，它是一个可以接受一个元函数做参数的元函数，在函数式编程里面这称作高阶函数。高阶函数可以让代码在更高的抽象层次上进行组合复用。
+
+
 
 ### 和函数式对比
 
 不可变性
-
-enum and using
 
 模式匹配和递归
 
