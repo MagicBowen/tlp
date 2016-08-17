@@ -713,15 +713,166 @@ int** ppi;
 Pointer3OfInt pppi = &ppi;
 ~~~
 
+### 柯理函数
+
+现在，我们想实现一个元函数，可以固定返回char类型的指定层数的指针类型。
+
+~~~cpp
+template<int N>
+struct CharPointer
+{
+	using Result = typename Times<N, char, PointerOf>::Result;
+};
+~~~
+
+如上，我们定义了元函数CharPointer，它是一个int型单参元函数。它的实现调用了Times，将其第二和第三个参数分别固定位char和PointerOf。
+
+借助于继承的特性，上面的代码可以简化为：
+
+~~~cpp
+template<int N>
+struct CharPointer ：Times<N, char, PointerOf>
+{
+};
+~~~
+
+上面这种定义元函数的方式叫做**元函数转发**。
+
+如果借助using关键字，可以实现得更加简单：
+
+~~~cpp
+template<int N> using CharPointer = Times<N, char, PointerOf>;
+~~~
+
+这里我们直接对Times绑定第二和第三个参数后为其起了别名CharPointer。
+
+在函数式编程里面，有个概念叫做函数柯里化(currying)。是指一个函数接收部分参数后，并不立即求值，而是继续返回另一个函数。
+
+如下Haskell代码定义了一个三数相乘的函数multiThree，它接收三个Int型参数返回它们的乘积：
+
+~~~haskell
+multiThree :: Int -> Int -> Int -> Int
+multiThree x y z = x * y * z
+~~~
+
+当我们将multiThree其中一个参数固定后，它就变成了一个二参函数。
+
+~~~bash
+ghci > let multiTwoWithNine = multiThree 9
+ghci > multiTwoWithNine 2 3
+~~~
+
+我们使用using关键字实现元函数转发，可以达到类似函数柯里化的效果。这对于我们最大化的复用函数有很多好处。
+
+> 函数柯里化在函数式编程语言里的意义非常重要，和C\++模板元编程里面的其实还是有区别的。例如在Haskell中，可以不用为柯里化函数定义别名，就直接将其作为另一个函数的参数传递，而在C\++模板元编程里目前还做不到。
+
+现在借助柯里化，我们重新实现Pointer2Of如下：
+
+~~~cpp
+template<typename T> using Pointer2Of = Times<2, T, PointerOf>;
+~~~
+
+可以看到，所谓的Pointer2Of，其实就是把Times的第一个和第三个参数固定后，得到的单参柯里化函数。
+
 ### 一切都是类型
 
+下面我们实现一个在编译期判断两个类型是否相等的元函数：
 
+~~~cpp
+template<typename T, typename U>
+struct IsEqual
+{
+    enum {Result = false};
+};
+
+template<typename T>
+struct IsEqual<T, T>
+{
+    enum {Result = true};
+};
+~~~
+
+上面的实现中使用了模式匹配，当两个类型相等时，选择下面的特化版本，否则选择非特化版本。
+
+接下来我们实现一个在编译期判断两个整数是否相等的元函数：
+
+~~~cpp
+template<int N, int M>
+struct IsNumEqual
+{
+    enum {Result = false};
+};
+
+template<int N>
+struct IsNumEqual<N, N>
+{
+    enum {Result = true};
+};
+~~~
+
+我们看到，判断整数是否相等的元函数的实现和前面对类型进行判断的元函数实现完全一样，唯独入参类型不同，但却必须为这两个元函数起不同的函数名称。
+
+另外，前面我们用Result表示返回类型，这里又用它返回数值。这种返回类型上的差异，会让我们在函数组合的时候碰到不少问题。
+
+如果我们能有一个方法，让所有的元函数的入参类型和返回值类型都能一致化，那将对元函数的复用和组合带来极大的好处。
+
+有一个办法可以让我们把数值也变成一个类型。
+
+~~~cpp
+template<int V>
+struct IntType
+{
+    enum { Value = V };
+    using Result = IntType<V>;
+};
+~~~
+
+有了IntType，那么`IntType<3>`，`IntType<4>`就是不同的类型了。可以使用`IntType<3>::Value`获得它的数值，但是一般情况下，在元编程中我们只使用它的类型。
+
+同理，对于bool值，也可以如此封装：
+
+~~~cpp
+template<bool V> struct BoolType;
+
+template<>
+struct BoolType<true>
+{
+    enum { Value = true };
+    using Result = BoolType<true>;
+};
+
+template<>
+struct BoolType<false>
+{
+    enum { Value = false };
+    using Result = BoolType<false>;
+};
+
+using TrueType = BoolType<true>;
+using FalseType = BoolType<false>;
+~~~
+
+这样，后续所有的元函数的入参和返回值就都只有类型，再没有数值。如此归一化后，将会避免很多重复，也会让元函数的组合能力威力大增。
+
+最后IsEqual只有一份统一的实现：
+
+~~~cpp
+template<typename T, typename U>
+struct IsEqual
+{
+    using Result = FalseType;
+};
+
+template<typename T>
+struct IsEqual<T, T>
+{
+    using Result = TrueType;
+};
+~~~
 
 ### 一切都是函数
 
 
-
-### 柯理函数
 
 
 ### 不可变性
