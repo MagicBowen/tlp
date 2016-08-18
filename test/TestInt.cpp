@@ -7,6 +7,7 @@
 #include <tlp/int/algo/Mul.h>
 #include <tlp/int/algo/Div.h>
 #include <tlp/int/algo/Mod.h>
+#include <tlp/int/algo/Sum.h>
 
 FIXTURE(TestInt)
 {
@@ -55,5 +56,11 @@ FIXTURE(TestInt)
         ASSERT_EQ(__mod(__int(0), __int(1)), __int(0));
         ASSERT_EQ(__mod(__int(10), __int(2)), __int(0));
         ASSERT_EQ(__mod(__int(11), __int(3)), __int(2));
+    };
+
+    TEST("sum of several numbers")
+    {
+        ASSERT_EQ(__sum(), __int(0));
+        ASSERT_EQ(__sum(__int(1), __int(2), __int(5)), __int(8));
     };
 };
