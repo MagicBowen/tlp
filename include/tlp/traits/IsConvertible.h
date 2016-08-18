@@ -13,12 +13,12 @@ private:
     using  Yes = char;
     struct No { char dummy[2]; };
 
-    static Yes Test(U);
-    static No  Test(...);
+    static Yes test(U);
+    static No  test(...);
     static T self();
 
 public:
-    using Result = BoolType<sizeof(Test(self())) == sizeof(Yes)>;
+    using Result = BoolType<sizeof(test(self())) == sizeof(Yes)>;
 };
 
 TLP_NS_END
