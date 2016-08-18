@@ -57,6 +57,8 @@ C\++模板元编程当年被提出来的时候，函数式编程还没有像今�
 
 如果你从来没有接触过C\++模板元编程，那么最好从一开始就把它当做一门全新的语言去学习，从头掌握C\++中这种新的计算模型和语法。这种新的语言和我们熟识的运行期C\++的语法和计算模型有很大的差异，但它的优势在于能和运行期C\++紧密无缝地结合在一起，无论是在提高程序可扩展性还是提高程序运行效率上，都能创造出非常不可思议的效果来。希望通过这一系列文章，可以让更多的人掌握C\++模板元编程这一设计利器，在适合的场合下以更酷、更有效的方式去解决问题。
 
+> 本文中所有的代码片段，如果在注释中给出在TLP库中对应的路径和文件名，则都可以在TLP库中对应位置找到源码，没有标注的其它的示例代码都是为了文章讲解所构造的临时代码。另外，示例代码在TLP库中可能会在tlp的命名空间中，阅读文章和TLP库源码时请注意区分。
+
 ## 模板的基本知识
 
 模板最开始作为一种更加安全的宏被引入C\++，用来解决代码在不同类型间复用的问题。
@@ -713,7 +715,7 @@ int** ppi;
 Pointer3OfInt pppi = &ppi;
 ~~~
 
-### 柯理函数
+### 柯理函数（currying）
 
 现在，我们想实现一个元函数，可以固定返回char类型的指定层数的指针类型。
 
@@ -725,7 +727,7 @@ struct CharPointer
 };
 ~~~
 
-如上，我们定义了元函数CharPointer，它是一个int型单参元函数。它的实现调用了Times，将其第二和第三个参数分别固定位char和PointerOf。
+如上，我们定义了元函数CharPointer，它是一个int型单参元函数。它的实现调用了Times，将其第二和第三个参数分别固定为char和PointerOf。
 
 借助于继承的特性，上面的代码可以简化为：
 
@@ -736,7 +738,7 @@ struct CharPointer ：Times<N, char, PointerOf>
 };
 ~~~
 
-上面这种定义元函数的方式叫做**元函数转发**。
+这种定义元函数的方式叫做**元函数转发**。
 
 如果借助using关键字，可以实现得更加简单：
 
@@ -762,7 +764,7 @@ ghci > let multiTwoWithNine = multiThree 9
 ghci > multiTwoWithNine 2 3
 ~~~
 
-我们使用using关键字实现元函数转发，可以达到类似函数柯里化的效果。这对于我们最大化的复用函数有很多好处。
+我们使用using关键字实现元函数转发，可以达到类似函数柯里化的效果。柯里化可以帮助更容易地复用函数，实现函数之间更灵活更强大的组合方式。
 
 > 函数柯里化在函数式编程语言里的意义非常重要，和C\++模板元编程里面的其实还是有区别的。例如在Haskell中，可以不用为柯里化函数定义别名，就直接将其作为另一个函数的参数传递，而在C\++模板元编程里目前还做不到。
 
@@ -776,7 +778,7 @@ template<typename T> using Pointer2Of = Times<2, T, PointerOf>;
 
 ### 一切都是类型
 
-下面我们实现一个在编译期判断两个类型是否相等的元函数：
+下面我们实现一个能够判断两个类型是否相等的元函数：
 
 ~~~cpp
 template<typename T, typename U>
@@ -792,7 +794,7 @@ struct IsEqual<T, T>
 };
 ~~~
 
-上面的实现中使用了模式匹配，当两个类型相等时，选择下面的特化版本，否则选择非特化版本。
+上面的实现中使用了模式特化，前面说过这相当于是函数的模式匹配。当两个类型相等时，选择下面的特化版本，否则选择非特化版本。
 
 接下来我们实现一个在编译期判断两个整数是否相等的元函数：
 
@@ -810,15 +812,17 @@ struct IsNumEqual<N, N>
 };
 ~~~
 
-我们看到，判断整数是否相等的元函数的实现和前面对类型进行判断的元函数实现完全一样，唯独入参类型不同，但却必须为这两个元函数起不同的函数名称。
+我们看到，判断整数是否相等的元函数的实现和前面对类型进行判断的元函数实现完全一样，唯独入参类型不同。由于元函数不支持函数重载，所以必须为这两个元函数起不同的函数名称。
 
-另外，前面我们用Result表示返回类型，这里又用它返回数值。这种返回类型上的差异，会让我们在函数组合的时候碰到不少问题。
+另外，我们之前一直用Result表示返回类型，现在又用它表示返回数值。这种返回类型上的差异，会让我们在函数组合的时候碰到不少问题。
 
 如果我们能有一个方法，让所有的元函数的入参类型和返回值类型都能一致化，那将对元函数的复用和组合带来极大的好处。
 
 有一个办法可以让我们把数值也变成一个类型。
 
 ~~~cpp
+// “tlp/int/IntType.h”
+
 template<int V>
 struct IntType
 {
@@ -832,6 +836,8 @@ struct IntType
 同理，对于bool值，也可以如此封装：
 
 ~~~cpp
+// “tlp/bool/BoolType.h”
+
 template<bool V> struct BoolType;
 
 template<>
@@ -852,11 +858,13 @@ using TrueType = BoolType<true>;
 using FalseType = BoolType<false>;
 ~~~
 
-这样，后续所有的元函数的入参和返回值就都只有类型，再没有数值。如此归一化后，将会避免很多重复，也会让元函数的组合能力威力大增。
+这样，后续所有的元函数的入参和返回值就只有类型，基本再没有数值。如此归一化后，将会避免很多重复，也会让元函数的组合能力威力大增。
 
-最后IsEqual只有一份统一的实现：
+当我们做了上述统一之后，IsEqual就只有一份实现：
 
 ~~~cpp
+// “tlp/bool/algo/IsEqual.h”
+
 template<typename T, typename U>
 struct IsEqual
 {
@@ -870,25 +878,348 @@ struct IsEqual<T, T>
 };
 ~~~
 
+前面我们实现过一个Print模板，用于在编译过程中打印常量的值。现在一切都是类型，我们对Print的实现进行修改，让其可以在编译期打印出类型结果的值。
+
+~~~cpp
+// “tlp/test/details/Print.h”
+
+template <typename T>
+struct Print
+{
+    const int Value = 1 / (sizeof(T) - sizeof(T));
+};
+
+#define __print(...) Print<__VA_ARGS__> UNIQUE_NAME(tlp_print_)
+~~~
+
+现在Print的入参变为一个类型T，使用`__print(T)`会导致一个编译期的告警，输出T的具体类型。`__print()`在输出前会先对其参数进行求值。
+
+~~~cpp
+// TestPrint.cpp
+
+__print(IsEqual<IntType<5>, IntType<6>>::Result);
+__print(IsEqual<TrueType, BoolType<true>>::Result);
+~~~
+
+上面cpp文件在我的编译环境中输出的告警信息中包含如下内容，其中包含着对`__print()`的参数的求值结果。
+
+~~~bash
+TestPrint.cpp : in instantiation of default member initializer Print<BoolType<false> >::Value' required here
+...
+TestPrint.cpp : in instantiation of default member initializer Print<BoolType<true> >::Value' required here
+~~~
+
+可见`IsEqual<IntType<5>, IntType<6>>::Result`的值是`BoolType<false>`，而`IsEqual<TrueType, BoolType<true>>::Result`的值是`BoolType<true>`。
+
+得益于我们将元编程计算统一到类型上，我们得到了一个统一的Print元函数。
+
 ### 一切都是函数
 
+前面我们对整形和bool提供了模板包装，可以将一个具体的值变为一个类型。例如`IntType<5>`和`IntType<6>`就是两个不同的类型，而`BoolType<true>`和`TrueType`则是相同的类型。
 
+从另一个角度来看IntType，它其实也是个元函数：接收一个int型常量，返回一个类型。BoolType也是一样的。为了简化对它们的使用，我们使用宏将其封装一下：
 
+~~~cpp
+#define __int(value)    typename IntType<value>::Result
+~~~
+
+~~~cpp
+#define __bool(...)    typename BoolType<__VA_ARGS__>::Result
+#define __true()       typename TrueType::Result
+#define __false()      typename FalseType::Result
+~~~
+
+后续我们可以如此使用：`__int(5)`，`__int(6)`，`__bool(true)`，`__true()`，`__false()`，这样的用法看起来更像是函数。事实上，你即可以认为它们是类型，也可以认为它们都是一些创建型函数，其中`__true()`和`__false()`比较特殊，没有参数而已。
+
+由于IsEqual也比较常用，所以我们将其也用宏封装一下：
+
+~~~cpp
+#define __is_eq(...)   typename IsEqual<__VA_ARGS__>::Result
+~~~
+
+如此前面的打印代码，就可以简化如下：
+
+~~~cpp
+// TestPrint.cpp
+
+__print(__is_eq(__int(5), __int(6)));
+__print(__is_eq(__true(), __bool(true)));
+~~~
+
+现在可以看到，构成整个计算的似乎都是函数。其实所有的类型都可以看作是函数，你可以将其想成是一个个创建函数，无非大多数都非常简单不需要参数而已。反过来所有的函数也都可以被看成是类型，当得到入参后，函数就变成其返回值对应的类型。
+
+如此看待程序的方式非常的有意义，《计算机程序的构造与解释》一书里面有一章也提到这个思想，但是比这里更要加的深邃和彻底。这种观点背后产生的设计思想非常的有用。例如对于运行期C++我们说一个函数是对数据进行操作的过程，然而当我们把这个函数的指针进行保存和传递的时候，它又变成了数据。如此我们就可以把一段计算方式进行存储和转移，在想要的时机再进行运算求值。在OO中，我们熟知的Command设计模式就是这个思路。
+
+有的时候，我们可能需要获得某个IntType或者BoolType里面的实际数值，所以在IntType和BoolType的定义中，仍然存在一个enum值`Value`。虽然我们可以像这样`__int(5)::Value`获得其内部数值，但是这样的用法和我们的元编程规范是不一致的！我们可以实现一个Value元函数，专门用来对类型求值。
+
+~~~cpp
+// “tlp/base/algo/Value.h”
+
+template<typename T>
+struct Value
+{
+    enum { Result = T::Value };
+};
+
+#define __value(...)    Value<__VA_ARGS__>::Result
+~~~
+
+Value元函数是整个TLP库中仅有的一个用Result表示非类型的元函数，它一般使用在一个元编程表达式的最后，对整个表达式进行求值后将值传递给运行期C\++，所以不会对元函数的组合造成问题。
+
+由于我们在IntType和BoolType中定义了内部enum成员Value，所以可以直接对其调用Value元函数：
+
+~~~cpp
+std::cout << __value(__int(5)) + __value(__int(6)) << std::endl;
+std::cout << __value(__true()) && __value(__bool(false)) << std::endl;
+~~~
+
+上面我们使用Value元函数在编译期对IntType和BoolType进行求值，然后在运行期进行数值和bool计算，将结果输出到IO上。
+
+能否直接就在编译期就对IntType进行数值运算，对BoolType进行逻辑运算呢？可以，定义针对IntType和BoolType专门的运算元函数即可。
+
+如下我们定义IntType的加法运算元函数，它接收两个IntType类型做入参，返回一个新的IntType，其Value是两个入参IntType的Value之和。
+
+~~~cpp
+// “tlp/int/algo/Add.h”
+
+template<typename T1, typename T2> struct Add;
+
+template<int V1, int V2>
+struct Add<IntType<V1>, IntType<V2>>
+{
+    using Result = IntType<V1 + V2>;
+};
+
+#define __add(...)    typename Add<__VA_ARGS__>::Result
+~~~
+
+我们可以在编译期打印出计算结果来：`__print(__add(__int(5), __int(6)))`。
+
+在TLP库中，我们定义了IntType的基本运算元函数：
+
+- `__inc()` : 递增运算。例如 `__inc(__int(5))`的结果是`__int(6)`;
+- `__dec()` : 递减运算。例如 `__dec(__int(5))`的结果是`__int(4)`;
+- `__add()` : 加法运算。例如 `__add(__int(5), __int(2))`的结果是`__int(7)`;
+- `__sub()` : 减法运算。例如 `__sub(__int(5), __int(2))`的结果是`__int(3)`;
+- `__mul()` : 乘法运算。例如 `__mul(__int(5), __int(2))`的结果是`__int(10)`;
+- `__div()` : 除法运算。例如 `__div(__int(5), __int(2))`的结果是`__int(2)`;
+- `__mod()` : 取模运算。例如 `__mod(__int(5), __int(2))`的结果是`__int(1)`;
+
+同样，对于BoolType我们定义了其基本的逻辑运算元函数：
+
+- `__not()`：取非操作。例如：`__not(__bool(true))`的结果是`__false()`；
+- `__and()`：逻辑与操作。例如：`__and(__true(), __false())`的结果是`__false()`；
+- `__or()`：逻辑或操作。例如：`__or(__true(), __false())`的结果是`__true()`；
+
+有了上述元函数，我们就可以在编译期将int和bool当做类型进行计算了，具体实现请参考TLP库里的源码。
+
+如果运行期需要对计算结果取值，可以在运算表达式的最后调用Value元函数对整个表达式进行取值。
+
+~~~cpp
+std::cout << __value(__add(__int(5), __int(6))) << std::endl;
+~~~
+
+最后再提一下Value元函数的实现，它默认入参类型里面定义了一个名叫Value的数值成员，我们自定义的IntType和BoolType都满足这个约束。而通过对Value的模板特化，可以无侵入性地对不满足这一约束的类型进行扩展。这其实就是我们熟知的C\++ traits技术。
+
+假如对于TLP库中的EmptyType，内部并无Value成员，我们通过定义一个Value元函数的特化版本对其无侵入性地扩展，如下：
+
+~~~cpp
+// “tlp/base/EmptyType.h”
+
+struct EmptyType
+{
+};
+
+#define __empty() EmptyType
+
+template<>
+struct Value<EmptyType>
+{
+	enum { Result = 0 };
+}
+~~~
+
+这样就可以对EmptyType调用Value元函数了：`__value(__empty())`。
+
+仔细观察上面这个表达式，一切都是函数，COOL！
 
 ### 不可变性
 
+C\++中可以参与编译期计算的主要是类型和编译期常量，都是不可变的（immutable）。所以从这个角度来说，C\++模板元编程是一种纯函数式语言，遵循引用透明性。也就是说函数没有状态，具有不可变性。对一个函数任何时候输入相同的入参，它将永远返回相同的值，不会变。另外，这里没有真正的变量，所谓变量只是一个值的别名符号，第一次绑定后就不能再变。如果想要保存一个变化后的值，只能重新定义一个新的变量。
 
-### 模式匹配和递归
+例如下面代码就无法编译通过：
+
+~~~cpp
+using Sum = __int(0);  // ok
+Sum = __add(Sum, __int(6)); // error
+~~~
+
+只能像下面这样：
+
+~~~cpp
+using Int0 = __int(0);  // ok
+using Sum = __add(Int0, __int(6)); // ok
+~~~
+
+这种不可变性带来很多好处。例如由于函数没有状态，所以可以延迟计算，这使得语言层面的惰性计算变得容易。所以C\++模板元编程天生是支持惰性计算的。
+
+但这种不可变性也带来很多问题，它会占用更多的内存和运行时开销。纯函数式语言一般依赖编译器或者解释器对其进行优化，但是性能普遍还是没有非函数式的好。这也就是为什么大量地使用模板会使得C\++的编译速度变得很慢，而且占用更多的内存。
+
+### 模式匹配
+
+C\++模板元编程中，编译器对模板的特化版本选择相当于是在做模式匹配，这个我们已经比较熟悉了。下面我们借助这一特性实现一个模板元编程中常用的进行类型选择的元函数IfThenElse。
+
+~~~cpp
+template<typename Condition, typename Then, typename Else> struct IfThenElse;
+
+template<typename Then, typename Else>
+struct IfThenElse<TrueType, Then, Else>
+{
+    using Result = Then;
+};
+
+template<typename Then, typename Else>
+struct IfThenElse<FalseType, Then, Else>
+{
+    using Result = Else;
+};
+
+#define __if(...) typename IfThenElse<__VA_ARGS__>::Result
+~~~
+
+有了IfThenElse，就可以容易地完成根据条件进行类型选择的计算。如下我们借助IfThenElse实现了一个元函数LargerType，它能够返回两个类型中内存空间更大的那个。
+
+~~~cpp
+template<typename T, typename U>
+using LargerType = __if(__bool(sizeof(T) > sizeof(U)), T, U);
+~~~
+
+
+除了模板特化，还有一个工具可以用来在模板元编程中完成模式匹配的功能，那就是C\++编译器对重载函数的选择。
+
+我们通过下面的示例展示如何通过函数重载来达成模式匹配。
+
+我们知道C\++中某些类型之间支持默认转化。例如short默认可以向int转型，子类指针可以默认转型为父类指针，而任何指针类型都可以默认转型为`void*`类型。如下示例中，我们将实现一个元函数，它能帮我们识别一个类型是否能够默认向另一个类型转型。
+
+通过分析，我们确定这个元函数的的原型为：
+
+> `IsConvertible :: (typename T -> typename U) -> BoolType`
+
+也就是说它的入参是两个类型T和U，如果T可以默认转型为U，则元函数返回`BoolType<true>`，否则返回`BoolType<false>`。
+
+在这个实现中，我们借助了编译器对函数重载的选择来完成模式匹配。
+
+~~~cpp
+// “tlp/traits/IsConvertible.h”
+
+template<typename T, typename U>
+struct IsConvertible
+{
+private:
+    using  Yes = char;
+    struct No { char dummy[2]; };
+
+    static Yes test(U);
+    static No  test(...);
+    static T self();
+
+public:
+    using Result = BoolType<sizeof(test(self())) == sizeof(Yes)>;
+};
+
+#define __is_convertible(...)  typename IsConvertible<__VA_ARGS__>::Result
+~~~
+
+上例中，我们在IsConvertible中定义了静态函数test的两个重载版本，一个入参类型是U，另一个是随意类型入参（`...`出现在C\++函数参数中表示不关心入参类型）。然后我们尝试把T传入test函数，如果T能够向U转型，则编译期会选择`Yes test(U)`版本，否则选择`No test(...)`版本。最后我们计算test返回类型的sizeof，就能判断出编译期选择了哪个版本（Yes和No是IsConvertible内部定义的两个类型，Yes的sizeof结果是1个字节，No是两个字节；sizeof是一个编译期运算符）。
+
+在上面的实现中我们用了一个小技巧，我们并没有给test直接传入T的对象，因为这样做的话我们就要承受让T生成对象的开销，而且关键的是我们对T的构造函数一无所知。所以这里定义了一个返回类型为T的静态函数`static T self()`，然后把这个函数交给test。还记得我们前面说的**一切都是函数，一切都是类型**吗？我们用self函数替代类型T的对象传入test，在编译期就能获得结果，而且避免了创建对象的开销。
+
+借助`__is_convertible`我们能够轻易的实现判断两个类型是否能够互相转型。
+
+~~~cpp
+// “tlp/traits/IsConvertible.h”
+
+#define __is_both_convertible(T, U)     __and(__is_convertible(T, U), __is_convertible(U, T))
+~~~
+
+上面代码中的`__and()`元函数，是我们前面介绍的对两个BoolType实现逻辑与的元函数。
+
+现在我们可以这样使用：
+
+~~~cpp
+__is_convertible(char, int)   // 返回__true()
+__is_convertible(char, void*) // 返回__false()
+__is_convertible(char*, void*)// 返回__true()
+
+struct Base{};
+struct Derived : Base {};
+
+__is_convertible(Base*, Derived*) // 返回__false()
+__is_convertible(Derived*, Base*) // 返回__true()
+~~~
+
+通过函数组合，我们还能实现出`__is_base_of()`用来判断一个类型是否是另一个的父类。
+
+~~~cpp
+// "tlp/traits/IsBaseOf.h"
+
+#define __is_base_of(T, U) 							\
+__and(__is_convertible(const U*, const T*) 			\
+	  __and(__not(__is_eq(const T*, const void*)), 	\
+            __not(__is_eq(const T, const U))))
+~~~
+
+如上我们定义类型T是类型U的父类的意思就是：`const U*`可以向`const T*`转型，但是`const T*`不是`const void*`，同时`const T`和`const U`不是相同类型。
+
+### 递归
+
+函数式语言依赖模式匹配和递归完成类似命令式语言里分支选择和循环迭代的功能。模板元编程中可以完成模式匹配的两种方式上节已经介绍。本节介绍模板元编程中的递归。
+
+前面在介绍编译期计算整数阶乘时，已经展示了类模板递归的一般做法。这里再补充一点就是C\++11支持了变长模板参数，而模板的变长参数则也是通过递归进行参数展开的。
+
+如下，我们实现一个可以对任意个IntType进行求和的元函数Sum：
+
+~~~cpp
+// "tlp/int/algo/Sum.h"
+
+template<typename ...Numbers> struct Sum;
+
+template<typename Number, typename ...LeftNumbers>
+struct Sum<Number, LeftNumbers...>
+{
+    using Result = typename Add<Number, typename Sum<LeftNumbers...>::Result>::Result;
+};
+
+template<> struct Sum<>
+{
+    using Result = IntType<0>;
+};
+
+#define __sum(...)  typename Sum<__VA_ARGS__>::Result
+~~~
+
+上面代码中，我们定义元函数Sum的原型是`template<typename ...Numbers> struct Sum;`，它的参数是变长的`typename ...Numbers`。如果参数个数为0，则选择特化版本`template<> struct Sum<>`，这时结果为`IntType<0>`；否则递归展开参数，用当前参数和剩余参数的总和进行相加`using Result = typename Add<Number, typename Sum<LeftNumbers...>::Result>::Result`。注意对变长参数声明时`...`在参数名前面，而对其进行使用时`...`在参数名后面。
+
+该元函数的使用如下：
+
+~~~cpp
+__sum();  // 返回 IntType<0>
+__sum(__int(1), __int(2), __int(5)); // 返回 IntType<8>
+~~~
 
 ### 总结：不同阶段的C\++
 
-编译期C\++可以看做是一门解释型语言，这时编译期充当着解释器，直接针对C\++源码进行计算。我们知道代码的元信息最全的地方就在于源码中，所以解释性语言往往拥有比较强大的反射能力。同样编译期C\++也具有非常强大的反射能力，这就是C\++ traits技术的力量来源。正式这种编译期反射的能力，是的基于类型计算的模板技术，是C\++构建框架和库的必备武器。
+前面我们介绍了C\++模板元编程各方面的基础知识。可以将C\++模板元编程看做是一门独立的纯函数式语言，它是图灵完备的。虽然C\++模板元编程和我们熟识的运行期C\++无论在语法还是计算模型上都有较大的差异，但他们却能最紧密无缝地集成在一起。有了模板元编程，我们就可以把C\++看成是一门两阶段语言。
 
-反射能力的来源
+![](./pics/two-phase.png)
 
-## 测试
+第一阶段发生在C\++编译期，这时是C\++模板元编程的天下。此时，C\++相当于一门纯函数式的解释型语言，编译器在此时充当了解释器的作用，直接面向C\++源代码进行解释执行。我们知道关于代码最全的元信息就存在于源代码自身中，所以解释型语言所谓反射或者自省的能力就非常的强。这也是为何C\++模板元编程拥有强大能力的另一个原因，框架和库的开发离不开语言自身拥有的反射能力。C\++模板元编程带来的这种反射能力，和运行期C\++的RTTI技术本质并不相同，它更加的强大且不会带来运行时开销。STL中的type_traits库，利用模板元编程技术定义了非常多的编译期反射工具，可以直接供大家使用。
 
-## 基本构建
+第一阶段C\++模板元编程的另一特殊性在于它的运算对象：类型和常量，是构成运行期C\++的最基本的元素。因此模板元编程可以看做是运行期C\++的代码生成器。当第一阶段结束后，C\++编译器恢复我们熟识的角色，针对第一阶段的结果代码进行编译，产生可以运行的C\++程序。正是模板元编程这种可以充当运行期C\++代码生成器的能力，使得它成为构造内部DSL的强大工具。
+
+> C\++在编译期之前还有一个预处理阶段。预处理期可以利用宏完成各种代码生成，Boost中还专门有一个关于预处理的工具库preprocessor，用于在预处理期进行数值运算及代码生成，甚至还定义了预处理期的数据结构和算法。虽然预处理技术也是一项非常有用的工具，但由于其原理仅是文本替换，并不做真正的运算，所以理论上并非图灵完备的，因此我们在上图中并未将其列入。
+
+## 编译期测试
 
 ## TypeList
 
