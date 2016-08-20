@@ -11,7 +11,7 @@ TLP_NS::AutoFixtureRegister _JOIN(tlp_auto_fixture_register, name)(#name);   \
 namespace _JOIN(TlpTestFixture_, name)
 
 ////////////////////////////////////////////////////////////////////////
-#define TEST_SETUP_NAME   TlpTestSetUp
+#define TEST_SETUP_NAME   TlpTestSetup
 using   TEST_SETUP_NAME = TLP_NS::EmptyType;
 
 #define SETUP()           struct TEST_SETUP_NAME
