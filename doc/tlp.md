@@ -34,7 +34,7 @@
 - 《C\++模板元编程》
 	正式介绍C\++模板元编程的一本书，引入了元函数的概念，对基于模板的函数式计算进行了规范化，发挥了编译期元函数可组合的优势。遗憾的是，此书只能算是boost中模板元编程库（mpl）的用户手册，基本上是在讲mpl库的用户接口和使用方法，没有涉及库的实现细节。现实中我们采用元编程解决问题，一般不会引用boost这么重的库，往往只会在某一局部借鉴类似的设计技巧。所以对于元编程来说，授之以渔的意义远大于授之以鱼。另外由于boost mpl库中用了大量C\++预处理期代码生成技术，导致想通过看mpl的源码掌握模板元编程的人基本是会陷入到一堆宏中，对于学习元编程增加了非常多的干扰因素。
 
-基于以上原因，我使用C\++11实现了一个C\++模板元编程的库：[TLP ](https://github.com/MagicBowen/tlp)[(https://github.com/MagicBowen/tlp)]()，然后再通过本文这一系列文章结合TLP库中的代码示例来为大家介绍C\++模板元编程的各方面知识。
+基于以上原因，我使用C\++11实现了一个C\++模板元编程的库：[TLP ](https://github.com/MagicBowen/tlp)[(https://github.com/MagicBowen/tlp)]()，然后再通过这一系列文章结合TLP库中的代码示例来为大家介绍C\++模板元编程的各方面知识。
 
 TLP库包含以下内容：
 - 基本的编译期数据类型IntType、BoolType以及基于其的运算函数；
@@ -1210,23 +1210,304 @@ __sum(__int(1), __int(2), __int(5)); // 返回 IntType<8>
 
 ### 总结：两阶段的C\++语言
 
-前面我们介绍了C\++模板元编程各方面的基础知识。可以将C\++模板元编程看做是一门独立的纯函数式语言，它是图灵完备的。虽然C\++模板元编程和我们熟识的运行期C\++无论在语法还是计算模型上都有较大的差异，但他们却能最紧密无缝地集成在一起。有了模板元编程，我们就可以把C\++看成是一门两阶段语言。
+前面我们介绍了C\++模板元编程的基础知识。我们将模板元编程的计算对象统一到类型上，引入了元函数的概念。元函数是构成模板元编程的计算基础，它支持默认参数，支持高阶函数，支持柯里化，遵守不可变性。最后我们介绍了在模板元编程中做计算控制的模式匹配和递归的相关技巧。
+
+在示例代码中，我们完成了几个模板元编程的基础元函数：IntType，BoolType，Value，Print，IsEqual，IfThenElse等等，并且对它们进行了宏的封装，分别是`__int()`，`__bool()`，`__value()`，`__print()`，`__is_eq()`，`__if()`。后文在使用的时候，对于某一用宏封装过的元函数，会提到“元函数Value”，可能也会提成“元函数`__value()`”，请注意它们是相同的。
+
+至此我们可以将C\++模板元编程看做是一门独立的图灵完备的纯函数式语言。虽然C\++模板元编程和我们熟识的运行期C\++无论在语法还是计算模型上都有较大的差异，但他们却能最紧密无缝地集成在一起。有了模板元编程，我们就可以把C\++看成是一门两阶段语言。
 
 ![](./pics/two-phase.png)
 
-第一阶段发生在C\++编译期，这时是C\++模板元编程的天下。此时，C\++相当于一门纯函数式的解释型语言，编译器在此时充当了解释器的作用，直接面向C\++源代码进行解释执行。我们知道关于代码最全的元信息就存在于源代码自身中，所以解释型语言所谓反射或者自省的能力都非常的强。这也是为何C\++模板元编程拥有强大能力的另一个原因，框架和库的开发离不开语言自身拥有的反射能力。C\++模板元编程带来的这种反射能力，和运行期C\++的RTTI技术本质并不相同，它更加的强大且不会带来运行时开销。STL中的type_traits库，利用模板元编程技术定义了非常多的编译期反射工具，可以直接供大家使用。
+第一阶段发生在C\++编译期，这时是C\++模板元编程的天下。此时，C\++相当于一门纯函数式的解释型语言，编译器在此时充当了解释器的作用，直接面向C\++源代码进行解释执行。我们知道代码自身最全的元信息就存在于源代码自身中，所以解释型语言所谓反射或者自省的能力都非常的强，这也是C\++模板元编程拥有强大能力的原因之一。框架和库的开发往往离不开语言自身拥有的反射能力。C\++模板元编程带来的这种反射能力，和运行期C\++的RTTI技术本质并不相同，它更加的强大且不会带来运行时开销。STL中的type_traits库，利用模板元编程技术定义了非常多的编译期反射工具，可以直接供大家使用。
 
 第一阶段C\++模板元编程的另一特殊性在于它的运算对象：类型和常量，是构成运行期C\++的最基本的元素。因此模板元编程可以看做是运行期C\++的代码生成器。当第一阶段结束后，C\++编译器恢复我们熟识的角色，针对第一阶段的结果代码进行编译，产生可以运行的C\++程序。正是模板元编程这种可以充当运行期C\++代码生成器的能力，使得它成为构造内部DSL的强大工具。
 
 > C\++在编译期之前还有一个预处理阶段。预处理期可以利用宏完成各种代码生成，Boost中还专门有一个关于预处理的工具库preprocessor，用于在预处理期进行数值运算及代码生成，甚至还定义了预处理期的数据结构和算法。虽然预处理技术也是一项非常有用的工具，但由于其原理仅是文本替换，并不做真正的运算，所以理论上并非是图灵完备的，因此我们在上图中并未将其列入。
 
-由于C\++的模板元编程能力是在C\++语言引入模板特性后被意外发现的，所以不像别的经过预先良好设计的函数式语言那样语法优美，功能完备。通过前面的例子确实也看到它的写法相比Haskell要繁琐的多，而且功能上也要差很多。在C\++11出现之前，标准上对模板元编程的支持还存在一些大的缺陷，而且不同编译器对模板元编程的支持也不太统一。另外我们也看到，模板元编程操作IO的能力比其它纯函数式语言还要更差，这导致了模板元编程的问题定位变得很难。
+由于C\++的模板元编程能力是在C\++语言引入模板特性后被意外发现的，所以不像别的经过预先良好设计的函数式语言那样语法优美，功能完备。通过前面的例子确实也看到它的写法相比Haskell要繁琐的多，而且功能上也要差很多。在C\++11出现之前，标准上对模板元编程的支持还存在一些大的缺陷，而且不同编译器对模板元编程的支持也不太统一。另外我们也看到，模板元编程操作IO的能力比其它纯函数式语言还要更差，这导致了模板元编程的问题定位变得困难。
 
-得益于近些年C\++标准的演进以及编译器的完善，C\++的编译期计算能力变得越来越完备，使得模板元编程相对于以前要完善和方便很多。虽然如此，由于历史原因，它仍旧无法和一门真正经过良好设计的语言相比。但是由于它天生内置于C\++，使得它和运行期C\++的结合上有着天然无法替代的优势，这也是我们要学习它的原因。不要相信类似 “python + 传统C\++” 的说法，否则你就基本丧失了构造灵活而且高效的C\++程序库和框架的能力。想要成为一名专业的C\++程序员，熟悉模板元编程是必须的。
+得益于近些年C\++标准以及主流编译器对编译期计算支持得越来越完备，使得模板元编程相比以前要更加方便和强大。虽然如此，由于历史原因，它仍旧无法和一门真正经过良好设计的语言相比。但由于它内置于C\++，使得它和运行期C\++的结合上有着天然无法替代的优势，这也是我们要学习它的原因。不要相信类似 “python + 传统C\++” 的说法，否则你就基本丧失了构造灵活高效的C\++程序库和框架的能力。想要成为一名专业的C\++程序员，熟悉模板元编程是必须的。
 
-## 编译期测试
+## 测试框架
 
-## TypeList
+既然说可以把模板元编程当做一门独立的语言，那么针对这门语言，我们希望能有一个专门的xUnit测试框架。
+
+传统的C\++测试框架，如gtest，cppUnit等，主要针对运行期C\++设计。既然模板元编程运行在C\++编译期，那么我们希望针对它的测试框架也运行在C\++编译期。另外虽然C\++编译期能用的基础设施捉襟见肘，但我们还是希望该框架的用法能和传统的xUnit测试框架类似，支持基本的用例管理和测试断言。
+
+TLP库中实现了这样一个测试框架，它的设计初衷是为了能够测试TLP库自身。它专门针对C\++编译期计算做测试，所有测试用例运行在C\++的编译期，一旦编译通过，则所有的测试用例执行成功。一旦有执行失败的用例，就会导致编译错误，编译器随即停止运行，等待去修复用例。它支持定义testcase，支持将testcase划分到不同的fixture中，并提供测试统计和测试报告。
+
+下面我们讲述一下该框架的一些主要设计技巧，涉及到的技术细节对大家学习模板元编程会有不少帮助。
+
+### Assertion
+
+测试最重要的是要有断言。C\++标准支持的编译期断言只有一个：`static_assert`。
+
+`static_assert`是C\++11标准引入的一个新关键字，用于在编译期做静态断言。它需要两个参数，第一个是一个可以在编译期返回bool值的常量表达式，第二个是一个字符串常量，用于当断言失败时编译器输出用。
+
+~~~cpp
+static_assert(sizeof(int) < sizeof(char), "Invoke an assertion failure!");
+~~~
+
+当编译器编译到如上代码时会产生一个编译错误，在错误报告中会包含字符串“Invoke an assertion failure!”。
+
+在前面的介绍中，我们已经将模板元编程的计算对象和返回结果都统一成类型了，所以我们需要对`static_assert`进行封装，让其能够直接对类型进行断言。
+
+首先我们需要一个断言`ASSERT_TRUE()`，它可以针对返回`BoolType`的元编程表达式进行断言。例如可以如下使用：
+
+~~~cpp
+ASSERT_TRUE(__bool(true));
+ASSERT_TRUE(__not(__false()));
+ASSERT_FALSE(__or(__true(), __false()));
+~~~
+
+我们需要用`static_assert`实现`ASSERT_TRUE`，就需要对`ASSERT_TRUE`的入参调用`__value()`元函数求值。如下是`ASSERT_TRUE`的实现：
+
+~~~cpp
+// "tlp/test/details/Asserter.h"
+
+#define ASSERT_TRUE(T)                  \
+static_assert(__value(T), "TLP Error: expect "#T" be true, but be false!")
+~~~
+
+同样我们实现`ASSERT_FALSE`如下：
+
+~~~cpp
+// "tlp/test/details/Asserter.h"
+
+#define ASSERT_FALSE(T)                 \
+static_assert(!(__value(T)), "TLP Error: expect "#T" be false, but be true!")
+~~~
+
+接下来我们实现用于断言两个类型是否相等的`ASSERT_EQ()`和`ASSERT_NE()`：
+
+~~~cpp
+// "tlp/test/details/Asserter.h"
+
+#define ASSERT_EQ(T, Expected)          \
+static_assert(__value(__is_eq(T, Expected)), "TLP Error: expect "#T" be equal to "#Expected"!")
+
+#define ASSERT_NE(T, Expected)          \
+static_assert(!(__value(__is_eq(T, Expected))), "TLP Error: expect "#T" be not equal to "#Expected"!")
+~~~
+
+它们的用法如下：
+
+~~~cpp
+ASSERT_EQ(__int(0), __int(0));
+ASSERT_NE(__int(0), __int(1));
+ASSERT_EQ(__if(__true(), int, char), int);
+ASSERT_EQ(__if(__false(), int, char), char);
+~~~
+
+TLP库中有一个特殊的类型`NullType`，它的定义如下：
+
+~~~cpp
+// "tlp/base/NullType.h"
+
+struct NullType;
+
+#define __null() NullType
+~~~
+
+NullType仅有类声明，所以不能实例化。NullType被TLP库用于各种计算返回的无效值中。对此有一个元函数`__valid()`专门用于判断表达式的值是否为NullType。
+
+~~~cpp
+template<typename T>
+struct Valid
+{
+    using Result = TrueType;
+};
+
+template<>
+struct Valid<NullType>
+{
+    using Result = FalseType;
+};
+
+#define __valid(...)    typename Valid<__VA_ARGS__>::Result
+~~~
+
+当然你也可以扩展，通过定义Valid的不同特化，来支持更多的错误类型。
+
+对此，TLP提供了断言`ASSERT_VALID`和`ASSERT_INVALID`，专门用于判断表达式是否有效：
+
+~~~cpp
+// "tlp/test/details/Asserter.h"
+
+#define ASSERT_VALID(T)                 \
+static_assert(__value(__valid(T)), "TLP Error: expect "#T" be valid, but be invalid!")
+
+#define ASSERT_INVALID(T)               \
+static_assert(!(__value(__valid(T))), "TLP Error: expect "#T" be invalid, but be valid!")
+~~~
+
+### Testcase
+
+有了断言，我们希望把断言封装到独立的测试用例(testcase)里面。
+
+一个测试用例一般包含特定于自己的前置条件、action，以及对结果的断言。前置条件一般是准备好待测试用的输入数据，对于模板元编程就是定义类型。所谓action在模板元编程中一般是调用元函数，也就是实例化类模板。所以对于模板元编程，一个独立的测试用例，就是能够提供一个能在里面定义类型，实例化类模板，并且对结果类型进行断言的独立作用域。而一个类定义恰好就能够做这些。
+
+我们给出一个定义testcase的辅助宏定义如下：
+
+~~~cpp
+#define TEST(name) struct tlp_test_##name
+~~~
+
+这样我们就可以这样定义testcase了：
+
+~~~cpp
+TEST(operator_add_on_int_type)
+{
+	using num1 = __int(5);
+    using num2 = __int(6);
+	ASSERT_EQ(__add(num1, num2), __int(11));
+};
+~~~
+
+如上，这里testcase本质上是一个合法的类定义，所以测试用例名称需要是一个合法的C\++标示符，且最后需要以一个分号结束。
+
+对于测试用例名称，我们还是希望能够是一个自由字符串，这样限制会少很多。基于此我们使用前面用过的一个小技巧，让编译器自动为类生成一个文件内不重复的类名。`TEST`的定义修改如下：
+
+~~~cpp
+#define TEST(name) struct UNIQUE_NAME(tlp_test_)
+~~~
+
+这样，`TEST`的入参`name`就没有再使用，你可以让它是一个字符串，或者其它任何你喜欢的标识符。实际TLP库中`TEST`的定义比这要复杂，包含一些测试用例注册的代码，在其中实际上使用了name，并约束了name需要是一个字符串。
+
+现在可以如下这样自由地定义测试用例的名称了，里面再也不需要有讨厌的下划线了。
+
+~~~cpp
+TEST(“operator add on int type”)
+{
+	using num1 = __int(10);
+    using num2 = __int(2);
+	ASSERT_EQ(__add(num1, num2), __int(12));
+};
+~~~
+
+### Fixture
+
+Fixture用于对对测试用例分组。一个fixture中的所有测试用例共享了相同的脚手架，包含共同使用的前置数据，辅助函数定义等等。映射到模板元编程，fixture应该是一个可以定义类型，定义元函数的独立作用域。
+
+首先想到也用类定义来实现fixture，这样内部的testcase就相当于fixture类的内嵌类。那么我们定义可以实现fixture的辅助宏如下：
+
+~~~cpp
+
+#define FIXTURE(name) class tlp_fixture_##name
+~~~
+
+这样我们就可以如下定义Fixture了：
+
+~~~cpp
+FIXTURE(TestIntTypeAlgo)
+{
+	using num1 = __int(10);
+    using num2 = __int(2);
+
+    TEST("operator add on int type")
+    {
+		ASSERT_EQ(__add(num1, num2), __int(12));
+    };
+
+    TEST("operator sub on int type")
+    {
+		ASSERT_EQ(__sub(num1, num2), __int(8));
+    };
+};
+~~~
+
+这样看起来似乎一切OK了，而且我们用了class关键字，这样fixture类内部定义的所有东西默认都是private的，外部不可见。
+
+遗憾的是，上述方案有个致命问题。因为标准规定类的内部不能定义模板的特化，也就是说上述fixture的实现导致fixture内部基本无法定义元函数。
+
+于是我们退而求其次，用namespace来做fixture的实现：
+
+~~~cpp
+// "tlp/test/details/Fixture.h"
+
+#define FIXTURE(name) namespace tlp_fixture_##name
+~~~
+
+实际TLP中`FIXTURE`宏的实现还包含测试套件注册的代码，所以比这里的示例代码要复杂很多。无论如何现在的fixture内部就可以定义各种供测试用例使用的临时元函数了。
+
+~~~cpp
+FIXTURE(TestMetaFunctionInFixture)
+{
+	template<typename T, typename U>
+    using LargerType = __if(__bool(sizeof(T) > sizeof(U)), T, U);
+
+    struct TwoBytesType { char dummy[2]; };
+
+    TEST("int should be larger than two bytes")
+    {
+		ASSERT_EQ(LargerType<int, TwoBytesType>::Result, int);
+    };
+
+    TEST("char should be smaller than two bytes")
+    {
+		ASSERT_EQ(LargerType<char, TwoBytesType>::Result, TwoBytesType);
+    };
+}
+~~~
+
+### Setup
+
+Fixture内的所有测试用例，可以共享一个setup，用于执行相同的前置准备动作。
+
+所谓前置动作一般是调用元函数，将结果保存在临时类型里，供所有测试用例使用。由于每个testcase现在是一个类，那么我们可以想到在fixture里面为所有testcase类提供一个共同的父类，就能达到这样的效果。
+
+于是我们定义setup如下：
+
+~~~cpp
+// "tlp/test/details/Fixture.h"
+
+#define SETUP() struct TlpTestSetup
+~~~
+
+每个testcase需要继承自TlpTestSetUp，于是`TEST`的定义修改如下：
+
+~~~cpp
+#define TEST(name) struct UNIQUE_NAME(tlp_test_) ：TlpTestSetup
+~~~
+
+现在我们可以在fixture中定义setup了：
+
+~~~cpp
+FIXTURE(TestSetUpInFixture)
+{
+    SETUP()
+    {
+        using expected = __int(0);
+    };
+
+    TEST("should use variable defined in setup")
+    {
+        ASSERT_EQ(__int(0), expected);
+    };
+};
+~~~
+
+上述fixture可以正常编译通过，但是遗憾的是没有定义setup的fixture中的testcase却不能编译通过了，编译期告诉我们缺少一个名为`TlpTestSetup`的父类。并不是所有的fixture都需要setup，所以我们提供一个默认的setup，以便所有的fixture都能编译通过。
+
+~~~cpp
+// "tlp/test/details/Asserter.h"
+
+using TlpTestSetup = tlp::EmptyType;
+~~~
+
+上面我们在定义`Fixture`的头文件中定义了一个全局的类`TlpTestSetup`，它是tlp库中定义的空类的别名(`struct EmptyType {}`)。如果某一个fixture中定义了自己的`TlpTestSetup`，则会在该fixture命名空间中遮掩全局的`TlpTestSetup`，则该fixture中所有的testcase都将继承自自己的`TlpTestSetup`。否则就会继承自全局的这个空类。
+
+至此，有没有定义setup的fixture都能工作了。
+
+### Teardown
+
+既然有了setup，我们自然希望能对称的有个teardown，用于处理同一个fixture中所有测试用例的共同的善后工作。
+
+前面我们通过为所有测试用例定义一个共同的父类来完成setup的功能，但是teardown的执行是在每个testcase的后面。不过这难不倒我们。
+
+### Others
+
+## TLP
 
 ## 和运行期结合
 
