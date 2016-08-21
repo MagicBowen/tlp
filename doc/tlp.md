@@ -716,6 +716,45 @@ int** ppi;
 Pointer3OfInt pppi = &ppi;
 ~~~
 
+高阶函数除了允许函数的参数是函数，还允许函数的返回值也是函数。对于C\++，我们利用可以在类或者模板里面嵌套定义模板的特性，来达成类似的目的。
+
+~~~cpp
+template<typename T>
+struct OuterFunc
+{
+	template<typename U, typename V>
+    struct Result
+    {
+    	// ...
+    }；
+};
+~~~
+
+如上我们定义了一个单参元函数`OuterFunc`，它的返回值是另外一个双参元函数。注意，在调用类或模板内部定义的模板时，标准要求必须使用template关键字。所以我们如下方式使用OuterFunc的返回值`OuterFunc<int>:: template Result`。
+
+由于C\++标准不允许在类或者模板的内部定义模板的特化，一旦我们定义的内部元函数使用了模板特化，那么就必须定义在外面，再由原来的外层元函数引用。如下：
+
+~~~cpp
+template<typename T, typename U>
+struct InnerFunc
+{
+	// 主版本实现
+};
+
+template<typename T>
+struct InnerFunc<T, T>
+{
+	// 特化版本实现
+};
+
+template<typename T>
+struct OuterFunc
+{
+	template<typename U, typename V>
+	using Result = InnerFunc<U, V>;
+};
+~~~
+
 ### 柯理函数（currying）
 
 现在，我们想实现一个元函数，可以固定返回char类型的指定层数的指针类型。
@@ -1044,28 +1083,6 @@ struct Value<EmptyType>
 
 仔细观察上面这个表达式，一切都是函数，COOL！
 
-### 不可变性
-
-C\++中可以参与编译期计算的主要是类型和编译期常量，都是不可变的（immutable）。所以从这个角度来说，C\++模板元编程是一种纯函数式语言，遵循引用透明性。也就是说函数没有状态，具有不可变性。对一个函数任何时候输入相同的入参，它将永远返回相同的值。另外，这里也没有真正的变量，这里的变量只是一个值的别名符号，第一次绑定后就不能再变。如果想要保存一个变化后的值，只能重新定义一个新的变量。
-
-例如下面代码就无法编译通过：
-
-~~~cpp
-using Sum = __int(0);  // ok
-Sum = __add(Sum, __int(6)); // error
-~~~
-
-只能像下面这样：
-
-~~~cpp
-using Int0 = __int(0);  // ok
-using Sum = __add(Int0, __int(6)); // ok
-~~~
-
-这种不可变性带来很多好处。例如由于函数没有状态，所以可以延迟计算，这使得语言层面的惰性计算变得容易。所以C\++模板元编程天生是支持惰性计算的。
-
-但这种不可变性也带来很多问题，它会占用更多的内存和运行时开销。纯函数式语言一般依赖编译器或者解释器对其进行优化，但是性能普遍还是没有命令式的好。这也是为什么大量地使用模板会使得C\++的编译速度超出寻常地慢，而且会占用更多的内存。
-
 ### 模式匹配
 
 C\++模板元编程中，编译器对模板的特化版本选择相当于是在做模式匹配，这个我们已经比较熟悉了。下面我们借助这一特性实现一个模板元编程中常用的进行类型选择的元函数IfThenElse。
@@ -1208,13 +1225,115 @@ __sum();  // 返回 IntType<0>
 __sum(__int(1), __int(2), __int(5)); // 返回 IntType<8>
 ~~~
 
+### 不可变性
+
+C\++中可以参与编译期计算的主要是类型和编译期常量，都是不可变的（immutable）。所以从这个角度来说，C\++模板元编程是一种纯函数式语言，遵循引用透明性。也就是说函数没有状态，具有不可变性。对一个函数任何时候输入相同的入参，它将永远返回相同的值。另外，这里也没有真正的变量，这里的变量只是一个值的别名符号，第一次绑定后就不能再变。如果想要保存一个变化后的值，只能重新定义一个新的变量。
+
+例如下面代码就无法编译通过：
+
+~~~cpp
+using Sum = __int(0);  // ok
+Sum = __add(Sum, __int(6)); // error
+~~~
+
+只能像下面这样：
+
+~~~cpp
+using Int0 = __int(0);  // ok
+using Sum = __add(Int0, __int(6)); // ok
+~~~
+
+这种不可变性带来很多好处。例如由于函数没有状态，所以可以保存入参然后延迟计算，这使得语言层面的惰性计算变得容易。
+
+但这种不可变性也带来很多问题，它会占用更多的内存和运行时开销。纯函数式语言一般依赖编译器或者解释器对其进行优化，但是性能普遍还是没有命令式的好。这也是为什么大量地使用模板会使得C\++的编译速度超出寻常地慢，而且会占用更多的内存。
+
+### 惰性
+
+C\++对模板的具现化采用尽量惰性的原则。只有当你使用了模板的内部定义，编译器才会为模板生成对应的定义。
+
+所以对于元函数，当你不访问内部的Result对其求值，编译器是不会为其做计算的。所以我们可以把一个元函数当做运行期函数指针一样进行传递，直到我们需要的时候再对其求值。
+
+对于惰性，我们再举下面一个例子：
+
+~~~cpp
+template<typename T, bool isClonable>
+struct Creator
+{
+    static T* create(const T* instance)
+    {
+        if(isClonable)
+        {
+            return instance->clone();
+        }
+        else
+        {
+            T* newInstance = new T(*instance);
+            return newInstance;
+        }
+    }
+};
+~~~
+
+如上我们想要一个工厂类，它能够创建入参T类型的对象。如果T支持clone方法，则采用从一个现有对象clone出新对象的方法，否则调用拷贝构造函数new出来一个新对象。Creator的第二个参数isClonable用来指示前一个参数T是否支持clone。
+
+遗憾的是，上述代码是不能工作的。当我们传递一个不支持clone的类进去，即使我们将isClonable设为false，编译器也会对create函数进行完整编译，会报告T缺少clone方法。
+
+~~~cpp
+struct UnclonableObject
+{
+    UnclonableObject(){}
+    UnclonableObject(const UnclonableObject&) {}
+};
+
+UnclonableObject object；
+
+Creator<UnclonableObject, false> creator;
+~~~
+
+然而当我们写出上述代码进行编译，发现却能编译通过！原因是C\++编译器的惰性特征做了手脚，此时它没有看到任何人调用`Creator<UnclonableObject, false>`的create方法，所以并未生成该方法。
+
+一旦我们写出如下代码，就会和我们最初预想的一致：编译失败，编译器告诉我们UnclonableObject中没有clone方法。
+
+~~~cpp
+UnclonableObject* newObject = creator.create(&object);
+~~~
+
+解决该问题的方式很简单，就是把运行期的分支选择`if`换成编译器的分支选择元函数`__if()`。
+
+~~~cpp
+template<typename T>
+struct ClonableCreator
+{
+    static T* create(const T* instance)
+    {
+        return instance->clone();
+    }
+};
+
+template<typename T>
+struct UnclonableCreator
+{
+    static T* create(const T* instance)
+    {
+        T* newInstance = new T(*instance);
+        return newInstance;
+    }
+};
+
+template<typename T, bool isClonable> using Creator = __if(__bool(isClonable), ClonableCreator<T>, UnclonableCreator<T>);
+~~~
+
+由于模板元编程的惰性特征，`__if()`元函数在任何时候只会根据第一个入参的bool值对后面的两个参数中的一个进行求值。当我们调用`Creator<UnclonableObject, false>`时，由于我们传入的是false，`__if(__bool(false), ClonableCreator<T>, UnclonableCreator<T>)`只会对UnclonableCreator<T>具现化，所以没有再出现之前的编译错误。
+
+利于惰性求值，在编译期选择性的做类型具现化，是一个模板元编程非常有用的特性。
+
 ### 总结：两阶段的C\++语言
 
-前面我们介绍了C\++模板元编程的基础知识。我们将模板元编程的计算对象统一到类型上，引入了元函数的概念。元函数是构成模板元编程的计算基础，它支持默认参数，支持高阶函数，支持柯里化，遵守不可变性。最后我们介绍了在模板元编程中做计算控制的模式匹配和递归的相关技巧。
+前面我们介绍了C\++模板元编程的基础知识。我们将模板元编程的计算对象统一到类型上，引入了元函数的概念。元函数是构成模板元编程的计算基础，它支持默认参数，支持高阶函数，支持柯里化，遵守不可变性。最后我们还介绍了在模板元编程中做计算控制的模式匹配和递归的相关技巧。
 
 在示例代码中，我们完成了几个模板元编程的基础元函数：IntType，BoolType，Value，Print，IsEqual，IfThenElse等等，并且对它们进行了宏的封装，分别是`__int()`，`__bool()`，`__value()`，`__print()`，`__is_eq()`，`__if()`。后文在使用的时候，对于某一用宏封装过的元函数，会提到“元函数Value”，可能也会提成“元函数`__value()`”，请注意它们是相同的。
 
-至此我们可以将C\++模板元编程看做是一门独立的图灵完备的纯函数式语言。虽然C\++模板元编程和我们熟识的运行期C\++无论在语法还是计算模型上都有较大的差异，但他们却能最紧密无缝地集成在一起。有了模板元编程，我们就可以把C\++看成是一门两阶段语言。
+在前面的介绍中，我们一直将C\++模板元编程看做是一门独立的图灵完备的纯函数式语言。虽然C\++模板元编程和我们熟识的运行期C\++无论在语法还是计算模型上都有较大的差异，但他们却能最紧密无缝地集成在一起。有了模板元编程，我们就可以把C\++看成是一门两阶段语言。
 
 ![](./pics/two-phase.png)
 
@@ -1224,9 +1343,9 @@ __sum(__int(1), __int(2), __int(5)); // 返回 IntType<8>
 
 > C\++在编译期之前还有一个预处理阶段。预处理期可以利用宏完成各种代码生成，Boost中还专门有一个关于预处理的工具库preprocessor，用于在预处理期进行数值运算及代码生成，甚至还定义了预处理期的数据结构和算法。虽然预处理技术也是一项非常有用的工具，但由于其原理仅是文本替换，并不做真正的运算，所以理论上并非是图灵完备的，因此我们在上图中并未将其列入。
 
-由于C\++的模板元编程能力是在C\++语言引入模板特性后被意外发现的，所以不像别的经过预先良好设计的函数式语言那样语法优美，功能完备。通过前面的例子确实也看到它的写法相比Haskell要繁琐的多，而且功能上也要差很多。在C\++11出现之前，标准上对模板元编程的支持还存在一些大的缺陷，而且不同编译器对模板元编程的支持也不太统一。另外我们也看到，模板元编程操作IO的能力比其它纯函数式语言还要更差，这导致了模板元编程的问题定位变得困难。
+由于C\++的模板元编程能力是在C\++语言引入模板特性后被意外发现的，所以不像别的经过预先良好设计的函数式语言那样语法优美，功能完备。通过前面的例子确实也看到它的写法相比Haskell要繁琐的多，而且功能上也要差很多。在C\++11出现之前，标准上对模板元编程的支持还存在一些大的缺陷，而且不同编译器对模板元编程的支持也不太统一。另外我们也看到，模板元编程操作IO的能力非常的差，这导致了模板元编程的问题定位变得困难。
 
-得益于近些年C\++标准以及主流编译器对编译期计算支持得越来越完备，使得模板元编程相比以前要更加方便和强大。虽然如此，由于历史原因，它仍旧无法和一门真正经过良好设计的语言相比。但由于它内置于C\++，使得它和运行期C\++的结合上有着天然无法替代的优势，这也是我们要学习它的原因。不要相信类似 “python + 传统C\++” 的说法，否则你就基本丧失了构造灵活高效的C\++程序库和框架的能力。想要成为一名专业的C\++程序员，熟悉模板元编程是必须的。
+得益于近些年C\++标准以及主流编译器对编译期计算支持得越来越完备，使得模板元编程相比以前要更加方便和完善。虽然如此，由于历史原因，它仍旧无法和一门真正经过良好设计的语言相比。但由于它内置于C\++，使得它和运行期C\++的结合上有着天然无法替代的优势，这也是我们要学习它的原因。不要相信类似 “python + 传统C\++” 的说法，否则你就基本丧失了构造灵活高效的C\++程序库和框架的能力。想要成为一名专业的C\++程序员，熟悉模板元编程是必须的。
 
 ## 测试框架
 
@@ -1501,21 +1620,199 @@ using TlpTestSetup = tlp::EmptyType;
 
 ### Teardown
 
-既然有了setup，我们自然希望能对称的有个teardown，用于处理同一个fixture中所有测试用例的共同的善后工作。
+既然fixture内部可以定义setup，我们自然希望也能对称地定义teardown，用于处理同一个fixture中所有测试用例共同的善后工作。
 
-前面我们通过为所有测试用例定义一个共同的父类来完成setup的功能，但是teardown的执行是在每个testcase的后面。不过这难不倒我们。
+比如我们希望有如下的测试用例描述方式：
+
+~~~cpp
+FIXTURE(TestTearDown)
+{
+    TEARDOWN()
+    {
+    	ASSERT_EQ(__int(0), expected);
+    }
+
+	TEST("test 1")
+    {
+        using expected = __int(0);
+    };
+
+	TEST("test 2")
+    {
+        using expected = __sub(__int(1), __int(1));
+    };
+};
+~~~
+
+如上`TEARDOWN`的定义一般在fixture中所有测试用例的前面，但执行却在每个测试用例的后面。要如何实现`TEARDOWN`呢？借助前面实现setup的经验，似乎我们需要能让用户通过`TEARDOWN`定义一个类，每个测试用例能够继承它，然后再将自身传递给它。
+
+于是我们想到CRTP(Curiously Recurring Template Pattern)模式，它的用法如下：
+
+~~~cpp
+template<TestCase>
+struct TlpTestTeardown
+{
+	// 可以在此处使用TestCase类型的内部定义
+};
+
+struct TlpTestCase : TlpTestTearDown<TlpTestCase>
+{
+	// ...
+};
+~~~
+
+可以看到CRTP允许我们先定义一个父类模板，然后子类继承这个模板的时候把自身当做模板参数再传递给父类模板，于是父类模板中就可以使用子类类型了。
+
+问题是对于完成teardown功能的父类模板到底如何使用作为每个测试用例的子类类型？最直接的想法是让TlpTestTeardown再继承自Test，这样每个测试用例中的内容就对TlpTestTeardown直接可见了。
+
+~~~cpp
+template<TestCase>
+struct TlpTestTeardown : TestCase
+{
+	// ...
+};
+
+struct TlpTestCase : TlpTestTearDown<TlpTestCase>
+{
+	// ...
+};
+~~~
+
+遗憾的是，上述代码并不能编译通过。原因是`TlpTestTeardown<TlpTestCase>`将TlpTestCase作为父类，所以编译器编译到这句的时候需要TlpTestCase的完整定义，而此时TlpTestCase才开始定义。
+
+这警告了我们，如果我们想这样写：`struct TlpTestCase : TlpTestTearDown<TlpTestCase>`，就得在`TlpTestTearDown<TlpTestCase>`时刻看到TlpTestCase的完整定义。那么我们是否可以将`TlpTestTearDown<TlpTestCase>`挪到TlpTestCase定义的后面。
+
+~~~cpp
+struct TlpTestCase
+{
+	// ...
+};
+
+struct : TlpTestTearDown<TlpTestCase>{};
+~~~
+
+这可以通过编译，但是从此以后所有的测试用例后面都得加上`struct : TlpTestTearDown<TlpTestCase>{}`。这意味着我们需要给宏`TEST`实现一个对应的结束宏，专门用来隐藏`struct : TlpTestTearDown<TlpTestCase>{}`。这导致我们以后定义测试用例不能再使用常用的花括号，而是要像下面这样：
+
+~~~cpp
+TEST_BEGIN("test description")
+	// 测试用例内容实现于此
+TEST_END() // 用于隐藏“}； struct : TlpTestTearDown<TlpTestCase>{};”
+~~~
+
+这很讨厌！由于定义测试用例是如此的频繁，我们还是希望保持之前那种简洁的定义方式！
+
+我们再回到`struct TlpTestCase : TlpTestTearDown<TlpTestCase>`写法中，看来将这种组合关系定义放在花括号的前面就处理完毕是必要的。那么还有办法吗？我们想起，如果在TlpTestTearDown的成员方法中使用TlpTestCase类型，那么可以延迟对TlpTestCase完整定义的依赖时刻。于是我们将TlpTestTearDown的实现修改如下：
+
+~~~cpp
+template<typename TestCase>  struct TlpTestTeardown
+{
+    TlpTestTeardown()
+    {
+        struct Teardown : TestCase
+        {
+        	// 在这里实现teardown的定义，这里可以使用TestCase的内部定义！
+        };
+    }
+};
+~~~
+
+在上面的代码中，我们在`TlpTestTeardown`模板的构造函数里面定义了一个临时类`Teardown`继承了模板的入参TestCase。在该临时类里面我们可以定义teardown的具体内容，它可以访问TestCase类的内部定义。由于现在该临时类定义在TlpTestTeardown的成员函数里，所以`struct TlpTestCase : TlpTestTearDown<TlpTestCase>`时刻并不需要TlpTestCase的完整定义，编译器会将TlpTestTearDown的构造函数的实例化放到当前cpp文件的最后，这时已经能够看到TlpTestCase的完整定义了。
+
+当使用上面这种技术之后，`TEST`宏定义修改如下：
+
+~~~cpp
+#define TEST(name) struct UNIQUE_NAME(tlp_test_) ：TlpTestSetup, TlpTestTearDown<UNIQUE_NAME(tlp_test_)>
+~~~
+
+于是定义测试用例的用法还和以前一样，仍旧可以使用熟悉的花括号。然而teardown的定义却会稍微的不统一：
+
+~~~cpp
+#define TEARDOWN_BEGIN()							\
+template<typename TestCase>  struct TlpTestTeardown	\
+{												    \
+    TlpTestTeardown()								\
+    {												\
+        struct Teardown : TestCase					\
+        {
+
+#define TEARDOWN_END()  }; } };
+~~~
+
+可以看到定义teardown将不能像setup和testcase那样使用花括号，而得要使用`TEARDOWN_BEGIN()`和`TEARDOWN_END()`。虽然不怎么雅观，但这已经是我能想到的最好办法了。
+
+为了让setup的定义能够teardown统一，我们也给setup的定义提供了一套对称的宏定义`SETUP_BEGIN()`，`SETUP_END()`。当fixture中需要同时出现setup和teardown时，setup可以使用和teardown一致的风格去定义。其它情况下，setup还是使用花括号的风格。
+
+上述技术中其实还存在一个问题，由于TlpTestTeardown构造函数中的Teardown类继承的TestCase是从模板参数输入的，所以在其中是不能直接引用TestCase中的定义的，必须加上`TestCase::`前缀。为此我们实现了一个更有语义的宏``，用于显示指定teardown中某一个变量引用自TestCase。
+
+~~~cpp
+#define __test_refer(...)       typename TestCase::__VA_ARGS__
+~~~
+
+最终，我们可以如下定义一个完整的fixture：
+
+~~~cpp
+FIXTURE(TestWithSetUpAndTearDown)
+{
+    SETUP_BEGIN()
+        using Expected = __int(2);
+    SETUP_END()
+
+    TEARDOWN_BEGIN()
+        ASSERT_EQ(__test_refer(Result), Expected);
+    TEARDOWN_END()
+
+    TEST("test1")
+    {
+        using Result = __add(__int(1), __int(1));
+    };
+
+    TEST("test2")
+    {
+        using Result = __div(__int(4), __int(2));
+    };
+};
+~~~
+
+我们不得不承认，引入teardown后让整个框架复杂了很多，而且风格也趋向不一致。但是对于具有不可变性的元编程来说，清理测试上下文的事情本就意义不大，所以一般在fixture中需要定义teardown的机会并不多。关键地我们没有因为引入teardown的功能损害到原有定义testcase的简洁性。而且在没有teardown的fixture中，setup仍旧可以像以前一样使用花括号。所以绝大多数情况下，还是可以接受的！
+
+不过我相信或许还有更好的实现方式，不过限于本人能力，只能到此！如果你了解更好的实现方式，还请不吝赐教！
 
 ### Others
+
+我们知道一个完整的测试框架还需要有用例过滤和用例统计汇报的功能。由于模板元编程基本没有任何IO能力，所以单纯靠C\++模板元编程自身，用例过滤只能靠注代码了。对于用例统计汇报，倒是可以在元编程范畴内完成，但是用例统计结果靠编译告警打印出来格式太难看，所以我们最后还是使用了一些运行期C\++的IO能力。
+
+我们在`FIXTURE`和`TEST`的宏里面加了一些fixture和testcase注册的代码，所以用户定义的fixture和test都会被统计到，如果你希望最终能够打印出所有的用例情况，那么定义一个main函数，调用一下`TLP_REPORT_ALL_TESTS()`即可。如下：
+
+~~~cpp
+#include <tlp/test/Test.hpp>
+
+int main()
+{
+    TLP_REPORT_ALL_TESTS();
+
+    return 0;
+}
+~~~
+
+实现上述代码后，测试用例就可以编译成一个可执行程序。运行该可执行程序，就会在终端上以我们熟悉的样式打印出所有的fixture和test的统计情况。
+
+![](./pics/test-report.png)
+
+注意上述main函数仅是为了输出测试报告。测试用例的运行仍旧是在编译期，一旦编译完成就说明所有测试用例都通过了。如果你不需要测试报告，那么就可以不用实现这个main函数。关于测试用例注册和打印的实现，完全是运行期C\++的技术，和本文无关，这里就不再赘述。
+
+至此，整个测试框架的核心技术就介绍到这里，里面涉及到一些类和模板的设计技巧，相信对于设计框架的同学会有用。对测试框架其它代码细节感兴趣的话可以访问TLP库的源码，测试框架的所有源码在"include/tlp/test"目录下。
 
 ## TLP
 
 ## 和运行期结合
 
+### 类型推断
+
+decltype
+
 ### traits
 
 ### policy
-
-### 类型推断
 
 ## 应用
 
