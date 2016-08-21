@@ -4,7 +4,7 @@
 
 ## 前言
 
-熟悉C\++的程序员都知道，C\++是一门多范式编程语言，支持面向过程、面向对象、泛型编程以及函数式编程范式。然而提到C\++模板元编程，在很多人心里这却似乎是C\++里的一种黑魔法：它很难学习，一旦进入这个领域曾经那些熟悉的东西（if，for...）都不再灵验；它很强大，但现实中却鲜见有人用它来解决实际问题，除过偶尔在一些编码练习中被某些C\++狂热粉作为奇淫巧技拿出来秀肌肉。
+熟悉C\++的程序员都知道，C\++是一门多范式编程语言，支持面向过程、面向对象、泛型编程以及函数式编程范式。然而提到C\++模板元编程，在很多人心里这却似乎是C\++里的一种黑魔法：它很难学习，一旦进入这个领域曾经那些熟悉的东西（if，for...）都不再灵验；它很强大，但现实中却鲜见有人用它来解决实际问题，除过偶尔在一些编码练习中被某些C\++狂热粉当做奇淫巧技拿出来秀秀肌肉。
 
 其实模板元编程是C\++所支持的一种非常强大的计算能力，它是使用C\++开发高质量库和框架所离不开的一项武器。
 
@@ -716,7 +716,7 @@ int** ppi;
 Pointer3OfInt pppi = &ppi;
 ~~~
 
-高阶函数除了允许函数的参数是函数，还允许函数的返回值也是函数。对于C\++，我们利用可以在类或者模板里面嵌套定义模板的特性，来达成类似的目的。
+高阶函数除了允许函数的参数是函数，还允许函数的返回值也是函数。对于C\++，我们利用可以在类或者模板里面嵌套定义模板的特性，来实现元函数的返回值是元函数。
 
 ~~~cpp
 template<typename T>
@@ -730,7 +730,7 @@ struct OuterFunc
 };
 ~~~
 
-如上我们定义了一个单参元函数`OuterFunc`，它的返回值是另外一个双参元函数。注意，在调用类或模板内部定义的模板时，标准要求必须使用template关键字。所以我们如下方式使用OuterFunc的返回值`OuterFunc<int>:: template Result`。
+如上我们定义了一个单参元函数`OuterFunc`，它的返回值是另外一个双参元函数。注意，在调用类或模板内部定义的模板时，标准要求必须使用template关键字。所以我们这样使用OuterFunc的返回值函数：`OuterFunc<int>:: template Result`。
 
 由于C\++标准不允许在类或者模板的内部定义模板的特化，一旦我们定义的内部元函数使用了模板特化，那么就必须定义在外面，再由原来的外层元函数引用。如下：
 
@@ -834,7 +834,7 @@ struct IsEqual<T, T>
 };
 ~~~
 
-上面的实现中使用了模式特化，前面说过这相当于是函数的模式匹配。当两个类型相等时，选择下面的特化版本，否则选择非特化版本。
+上面的实现中使用了模式特化，当两个类型相等时，选择下面的特化版本，否则选择非特化版本。
 
 接下来我们实现一个在编译期判断两个整数是否相等的元函数：
 
@@ -856,7 +856,7 @@ struct IsNumEqual<N, N>
 
 另外，我们之前一直用Result表示返回类型，现在又用它返回数值。这种返回型别上的差异，会让我们在函数组合的时候碰到不少问题。
 
-如果我们能有一个方法，让所有的元函数的入参类型和返回值型别都能一致化，那将对元函数的复用和组合带来极大的好处。
+如果我们能有一个方法，让所有的元函数的入参的型别和返回值型别都能一致化，那将对元函数的复用和组合带来极大的好处。
 
 有一个办法可以让我们把数值也变成一个类型。
 
@@ -871,7 +871,7 @@ struct IntType
 };
 ~~~
 
-有了IntType，那么`IntType<3>`，`IntType<4>`就是不同的类型了。可以使用`IntType<3>::Value`获得它的数值，但是一般情况下，在元编程中我们只使用它的类型就够了。
+有了IntType，那么`IntType<3>`，`IntType<4>`就是不同的类型了。可以使用`IntType<3>::Value`获得它的数值，但是一般情况下，在元编程中我们更倾向于使用它的类型。
 
 同理，对于bool值，也可以如此封装：
 
@@ -988,7 +988,7 @@ __print(__is_eq(__true(), __bool(true)));
 
 现在可以看到，构成整个计算的似乎都是函数。其实所有的类型都可以看作是函数，你可以将其想成是一个个创建函数，无非大多数都非常简单不需要参数而已。反过来所有的函数也都可以被看成是类型，当得到入参后，函数就变成其返回值对应的类型。
 
-> 如此看待程序的方式非常的有意义，《计算机程序的构造与解释》一书里面有一章专门提到这个思想，但是比这里更要加的深邃和彻底。这种观点背后产生的设计思想非常的有用。例如对于运行期C++我们说一个函数是对数据进行操作的过程，然而当我们把这个函数的指针进行保存和传递的时候，它又变成了数据。如此我们就可以把一段计算方式进行存储和转移，在想要的时机再进行运算求值。在OO中，我们熟知的Command设计模式就是这个思路。
+> 如此看待程序的方式非常的有意义，《计算机程序的构造与解释》一书里面有一章专门提到这个思想，但是比这里更要加的深邃和彻底。这种观点背后产生的设计思想非常的有用。例如对于运行期C++中的一个函数，我们认为它是一个对数据进行操作的过程，然而当我们把这个函数的指针进行保存和传递的时候，它又变成了数据。如此我们就可以把一段计算方式进行存储和转移，在想要的时机再进行运算求值。在OO中，我们熟知的Command设计模式就是这个思路。
 
 有的时候，我们可能需要获得某个IntType或者BoolType里面的实际数值，所以在IntType和BoolType的定义中，仍然存在一个enum值`Value`。虽然我们可以像这样`__int(5)::Value`获得其内部数值，但是这样的用法和我们的元编程规范是不一致的！我们可以实现一个Value元函数，专门用来对类型求值。
 
@@ -1035,7 +1035,7 @@ struct Add<IntType<V1>, IntType<V2>>
 
 我们可以在编译期打印出计算结果来：`__print(__add(__int(5), __int(6)))`。
 
-在TLP库中，我们定义了IntType的基本运算元函数：
+类似地，在TLP库中针对IntType定义了如下基本运算元函数：
 
 - `__inc()` : 递增运算。例如 `__inc(__int(5))`的结果是`__int(6)`;
 - `__dec()` : 递减运算。例如 `__dec(__int(5))`的结果是`__int(4)`;
@@ -1045,7 +1045,7 @@ struct Add<IntType<V1>, IntType<V2>>
 - `__div()` : 除法运算。例如 `__div(__int(5), __int(2))`的结果是`__int(2)`;
 - `__mod()` : 取模运算。例如 `__mod(__int(5), __int(2))`的结果是`__int(1)`;
 
-同样，对于BoolType我们定义了其基本的逻辑运算元函数：
+同样，对于BoolType定义了如下基本的逻辑运算元函数：
 
 - `__not()`：取非操作。例如：`__not(__bool(true))`的结果是`__false()`；
 - `__and()`：逻辑与操作。例如：`__and(__true(), __false())`的结果是`__false()`；
@@ -1059,9 +1059,9 @@ struct Add<IntType<V1>, IntType<V2>>
 std::cout << __value(__add(__int(5), __int(6))) << std::endl;
 ~~~
 
-最后再提一下Value元函数的实现，它默认入参类型里面定义了一个名叫Value的数值成员，我们自定义的IntType和BoolType都满足这个约束。而通过对Value的模板特化，可以无侵入性地对不满足这一约束的类型进行扩展。这其实就是我们熟知的C\++ traits技术。
+对于前面Value元函数的定义，它默认入参类型里面定义了一个名叫Value的数值成员，我们自定义的IntType和BoolType都满足这个约束。而通过对Value的模板特化，可以无侵入性地对不满足这一约束的类型进行扩展。这其实就是我们熟知的C\++ traits技术。
 
-假如对于TLP库中的EmptyType，内部并无Value成员，我们通过定义一个Value元函数的特化版本对其无侵入性地扩展，如下：
+例如对TLP库中的空类：EmptyType，它内部并无Value成员，我们通过定义一个Value元函数的特化版本对其无侵入性地扩展。代码如下：
 
 ~~~cpp
 // “tlp/base/EmptyType.h”
@@ -1079,7 +1079,7 @@ struct Value<EmptyType>
 }
 ~~~
 
-这样就可以对EmptyType调用Value元函数了：`__value(__empty())`。
+这样就可以对EmptyType也调用Value元函数了：`__value(__empty())`。
 
 仔细观察上面这个表达式，一切都是函数，COOL！
 
@@ -1111,7 +1111,6 @@ struct IfThenElse<FalseType, Then, Else>
 template<typename T, typename U>
 using LargerType = __if(__bool(sizeof(T) > sizeof(U)), T, U);
 ~~~
-
 
 除了模板特化，还有一个工具可以用来在模板元编程中完成模式匹配的功能，那就是C\++编译器对重载函数的选择。
 
@@ -1148,7 +1147,7 @@ public:
 #define __is_convertible(...)  typename IsConvertible<__VA_ARGS__>::Result
 ~~~
 
-上面代码中，我们在IsConvertible中定义了函数test的两个重载版本，一个入参类型是U，另一个是随意类型入参（`...`出现在C\++函数参数声明中表示不关心入参类型）。然后我们尝试把T传入test函数，如果T能够向U转型，则编译期会选择`Yes test(U)`版本，否则选择`No test(...)`版本。最后我们计算test返回类型的sizeof，就能判断出编译器选择了哪个版本（Yes和No是IsConvertible内部定义的两个类型，Yes的sizeof结果是1个字节，No是两个字节；sizeof是一个编译期运算符）。
+上面代码中，我们在IsConvertible中定义了静态函数test的两个重载版本，一个入参类型是U，另一个是随意类型入参（`...`出现在C\++函数参数声明中表示不关心入参类型）。然后我们尝试把T传入test函数，如果T能够向U转型，则编译期会选择`Yes test(U)`版本，否则选择`No test(...)`版本。最后我们计算test返回类型的sizeof，就能判断出编译器选择了哪个版本（Yes和No是IsConvertible内部定义的两个类型，Yes的sizeof结果是1个字节，No是两个字节；sizeof是一个编译期运算符）。
 
 在上面的实现中我们用了一个小技巧，我们并没有给test直接传入T的对象，因为这样做的话我们就要承受让T生成对象的开销，而且关键的是我们对T的构造函数一无所知。所以这里声明了一个返回类型为T的静态函数`static T self()`，然后把这个函数交给test。还记得我们前面说的**一切都是函数，一切都是类型**吗？我们用self函数替代类型T的对象传入test，在编译期就能获得结果，而且避免了创建对象的开销。
 
@@ -1193,7 +1192,7 @@ __and(__is_convertible(const U*, const T*) 			\
 
 函数式语言依赖模式匹配和递归完成类似命令式语言里分支选择和循环迭代的功能。模板元编程中可以完成模式匹配的两种方式上节已经介绍。本节介绍模板元编程中的递归。
 
-前面在介绍编译期计算整数阶乘时，已经展示了类模板递归的一般做法。这里再补充一点就是C\++11支持了变长模板参数，而模板的变长参数则也是通过递归进行参数展开的。
+前面在介绍编译期计算整数阶乘时，已经展示了使用类模板进行递归计算的一般做法。这里再补充一点就是C\++11支持了变长模板参数，而模板的变长参数则也是通过递归进行参数展开的。
 
 如下，我们实现一个可以对任意个IntType进行求和的元函数Sum：
 
@@ -1227,7 +1226,7 @@ __sum(__int(1), __int(2), __int(5)); // 返回 IntType<8>
 
 ### 不可变性
 
-C\++中可以参与编译期计算的主要是类型和编译期常量，都是不可变的（immutable）。所以从这个角度来说，C\++模板元编程是一种纯函数式语言，遵循引用透明性。也就是说函数没有状态，具有不可变性。对一个函数任何时候输入相同的入参，它将永远返回相同的值。另外，这里也没有真正的变量，这里的变量只是一个值的别名符号，第一次绑定后就不能再变。如果想要保存一个变化后的值，只能重新定义一个新的变量。
+C\++中可以参与编译期计算的主要是类型和编译期常量，都是不可变的（immutable）。所以从这个角度来说，C\++模板元编程是一种纯函数式语言，遵循引用透明性。也就是说函数没有状态，具有不可变性。对一个函数任何时候输入相同的入参，它将永远返回相同的值。另外，这里也没有真正的变量。模板元编程里所谓变量只是一个类型的别名符号，第一次绑定后就不能再变。如果想要保存一个变化后的值，只能重新定义一个新的变量。
 
 例如下面代码就无法编译通过：
 
@@ -1253,7 +1252,7 @@ C\++对模板的具现化采用尽量惰性的原则。只有当你使用了模�
 
 所以对于元函数，当你不访问内部的Result对其求值，编译器是不会为其做计算的。所以我们可以把一个元函数当做运行期函数指针一样进行传递，直到我们需要的时候再对其求值。
 
-对于惰性，我们再举下面一个例子：
+对于惰性，我们来看下面这个例子：
 
 ~~~cpp
 template<typename T, bool isClonable>
@@ -1267,8 +1266,7 @@ struct Creator
         }
         else
         {
-            T* newInstance = new T(*instance);
-            return newInstance;
+            return new T(*instance);
         }
     }
 };
@@ -1298,7 +1296,7 @@ Creator<UnclonableObject, false> creator;
 UnclonableObject* newObject = creator.create(&object);
 ~~~
 
-解决该问题的方式很简单，就是把运行期的分支选择`if`换成编译器的分支选择元函数`__if()`。
+解决该问题的方式很简单，就是把采用运行期分支选择`if`的实现转换成使用编译期的分支选择元函数`__if()`来实现。
 
 ~~~cpp
 template<typename T>
@@ -1315,8 +1313,7 @@ struct UnclonableCreator
 {
     static T* create(const T* instance)
     {
-        T* newInstance = new T(*instance);
-        return newInstance;
+        return new T(*instance);
     }
 };
 
@@ -1329,9 +1326,9 @@ template<typename T, bool isClonable> using Creator = __if(__bool(isClonable), C
 
 ### 总结：两阶段的C\++语言
 
-前面我们介绍了C\++模板元编程的基础知识。我们将模板元编程的计算对象统一到类型上，引入了元函数的概念。元函数是构成模板元编程的计算基础，它支持默认参数，支持高阶函数，支持柯里化，遵守不可变性。最后我们还介绍了在模板元编程中做计算控制的模式匹配和递归的相关技巧。
+前面我们介绍了C\++模板元编程的基础知识。我们将模板元编程的计算对象统一到类型上，引入了元函数的概念。元函数是构成模板元编程的计算基础，它支持默认参数，支持高阶函数，支持柯里化，遵守不可变性，具有惰性特征。此外我们还介绍了在模板元编程中做计算控制的模式匹配和递归的相关技巧。
 
-在示例代码中，我们完成了几个模板元编程的基础元函数：IntType，BoolType，Value，Print，IsEqual，IfThenElse等等，并且对它们进行了宏的封装，分别是`__int()`，`__bool()`，`__value()`，`__print()`，`__is_eq()`，`__if()`。后文在使用的时候，对于某一用宏封装过的元函数，会提到“元函数Value”，可能也会提成“元函数`__value()`”，请注意它们是相同的。
+在示例代码中，我们完成了几个模板元编程的基础元函数：IntType，BoolType，Value，Print，IsEqual，IfThenElse等等，并且对它们用宏进行了封装，分别是`__int()`，`__bool()`，`__value()`，`__print()`，`__is_eq()`，`__if()`。后文在使用的时候，对于某一用宏封装过的元函数，会提到“元函数Value”，可能也会提成“元函数`__value()`”，请注意它们是相同的。
 
 在前面的介绍中，我们一直将C\++模板元编程看做是一门独立的图灵完备的纯函数式语言。虽然C\++模板元编程和我们熟识的运行期C\++无论在语法还是计算模型上都有较大的差异，但他们却能最紧密无缝地集成在一起。有了模板元编程，我们就可以把C\++看成是一门两阶段语言。
 
@@ -1353,7 +1350,7 @@ template<typename T, bool isClonable> using Creator = __if(__bool(isClonable), C
 
 传统的C\++测试框架，如gtest，cppUnit等，主要针对运行期C\++设计。既然模板元编程运行在C\++编译期，那么我们希望针对它的测试框架也运行在C\++编译期。另外虽然C\++编译期能用的基础设施捉襟见肘，但我们还是希望该框架的用法能和传统的xUnit测试框架类似，支持基本的用例管理和测试断言。
 
-TLP库中实现了这样一个测试框架，它的设计初衷是为了能够测试TLP库自身。它专门针对C\++编译期计算做测试，所有测试用例运行在C\++的编译期，一旦编译通过，则所有的测试用例执行成功。一旦有执行失败的用例，就会导致编译错误，编译器随即停止运行，等待去修复用例。它支持定义testcase，支持将testcase划分到不同的fixture中，并提供测试统计和测试报告。
+TLP库中实现了这样一个测试框架，它的设计初衷是为了能够测试TLP库自身。它专门针对C\++编译期计算做测试，所有测试用例运行在C\++的编译期，一旦编译通过，则相当所有的测试用例执行成功。一旦有执行失败的用例，就会导致编译错误，编译器随即停止运行，等待去修复用例。它支持定义testcase，支持将testcase划分到不同的fixture中，并提供测试统计和测试报告。
 
 下面我们讲述一下该框架的一些主要设计技巧，涉及到的技术细节对大家学习模板元编程会有不少帮助。
 
@@ -1434,19 +1431,19 @@ NullType仅有类声明，所以不能实例化。NullType被TLP库用于各种�
 template<typename T>
 struct Valid
 {
-    using Result = TrueType;
+    using Result = __true();
 };
 
 template<>
 struct Valid<NullType>
 {
-    using Result = FalseType;
+    using Result = __false();
 };
 
 #define __valid(...)    typename Valid<__VA_ARGS__>::Result
 ~~~
 
-当然你也可以扩展，通过定义Valid的不同特化，来支持更多的错误类型。
+当然你也可以对其扩展，通过定义Valid的不同特化，来支持更多的错误类型。
 
 对此，TLP提供了断言`ASSERT_VALID`和`ASSERT_INVALID`，专门用于判断表达式是否有效：
 
@@ -1464,7 +1461,7 @@ static_assert(!(__value(__valid(T))), "TLP Error: expect "#T" be invalid, but be
 
 有了断言，我们希望把断言封装到独立的测试用例(testcase)里面。
 
-一个测试用例一般包含特定于自己的前置条件、action，以及对结果的断言。前置条件一般是准备好待测试用的输入数据，对于模板元编程就是定义类型。所谓action在模板元编程中一般是调用元函数，也就是实例化类模板。所以对于模板元编程，一个独立的测试用例，就是能够提供一个能在里面定义类型，实例化类模板，并且对结果类型进行断言的独立作用域。而一个类定义恰好就能够做这些。
+一个测试用例一般包含特定于自己的前置条件、action，以及对结果的断言。前置条件一般是准备好待测试用的输入数据，对于模板元编程就是定义类型。所谓action在模板元编程中一般是调用元函数，也就是实例化类模板。所以对于模板元编程，一个独立的测试用例，就是能够提供一个能在里面定义类型，实例化类模板，并且对结果类型进行断言的独立作用域。而一个类定义恰好能够满足这些要求。
 
 我们给出一个定义testcase的辅助宏定义如下：
 
@@ -1483,7 +1480,7 @@ TEST(operator_add_on_int_type)
 };
 ~~~
 
-如上，这里testcase本质上是一个合法的类定义，所以测试用例名称需要是一个合法的C\++标示符，且最后需要以一个分号结束。
+如上，一个testcase本质上得是一个合法的类定义，所以测试用例名称需要是一个合法的C\++标示符，且后花括号后面需要以一个分号结束。
 
 对于测试用例名称，我们还是希望能够是一个自由字符串，这样限制会少很多。基于此我们使用前面用过的一个小技巧，让编译器自动为类生成一个文件内不重复的类名。`TEST`的定义修改如下：
 
@@ -1491,9 +1488,9 @@ TEST(operator_add_on_int_type)
 #define TEST(name) struct UNIQUE_NAME(tlp_test_)
 ~~~
 
-这样，`TEST`的入参`name`就没有再使用，你可以让它是一个字符串，或者其它任何你喜欢的标识符。实际TLP库中`TEST`的定义比这要复杂，包含一些测试用例注册的代码，在其中实际上使用了name，并约束了name需要是一个字符串。
+这样，`TEST`的入参`name`就没有再使用，你可以让它是一个字符串，或者其它任何你喜欢的标识符。真实TLP库中`TEST`的定义比这要复杂，包含一些测试用例注册的代码，在其中实际上使用了name，并约束了name需要是一个字符串。
 
-现在可以如下这样自由地定义测试用例的名称了，里面再也不需要有讨厌的下划线了。
+现在可以如下这般自由地定义测试用例的名称了，再也不需要有讨厌的下划线了。
 
 ~~~cpp
 TEST(“operator add on int type”)
@@ -1537,7 +1534,7 @@ FIXTURE(TestIntTypeAlgo)
 
 这样看起来似乎一切OK了，而且我们用了class关键字，这样fixture类内部定义的所有东西默认都是private的，外部不可见。
 
-遗憾的是，上述方案有个致命问题。因为标准规定类的内部不能定义模板的特化，也就是说上述fixture的实现导致fixture内部基本无法定义元函数。
+遗憾的是，上述方案有个致命问题。因为标准规定类的内部不能定义模板的特化，也就是说上述fixture的实现导致fixture内部无法定义需要模式匹配的元函数。
 
 于是我们退而求其次，用namespace来做fixture的实现：
 
@@ -1547,7 +1544,7 @@ FIXTURE(TestIntTypeAlgo)
 #define FIXTURE(name) namespace tlp_fixture_##name
 ~~~
 
-实际TLP中`FIXTURE`宏的实现还包含测试套件注册的代码，所以比这里的示例代码要复杂很多。无论如何现在的fixture内部就可以定义各种供测试用例使用的临时元函数了。
+实际TLP中`FIXTURE`宏的实现还包含测试套件注册的代码，所以比这里的示例代码要复杂一些。无论如何现在的fixture内部就可以定义各种供测试用例使用的临时元函数了。
 
 ~~~cpp
 FIXTURE(TestMetaFunctionInFixture)
@@ -1573,7 +1570,7 @@ FIXTURE(TestMetaFunctionInFixture)
 
 Fixture内的所有测试用例，可以共享一个setup，用于执行相同的前置准备动作。
 
-所谓前置动作一般是调用元函数，将结果保存在临时类型里，供所有测试用例使用。由于每个testcase现在是一个类，那么我们可以想到在fixture里面为所有testcase类提供一个共同的父类，就能达到这样的效果。
+针对模板元编程进行测试时，所谓的前置动作一般是调用元函数，将结果保存在临时类型里，供所有测试用例使用。由于每个testcase现在是一个类，那么我们可以想到在fixture里面为所有testcase类提供一个共同的父类，就能达到这样的效果。
 
 于是我们定义setup如下：
 
@@ -1606,7 +1603,7 @@ FIXTURE(TestSetUpInFixture)
 };
 ~~~
 
-上述fixture可以正常编译通过，但是遗憾的是没有定义setup的fixture中的testcase却不能编译通过了，编译期告诉我们缺少一个名为`TlpTestSetup`的父类。并不是所有的fixture都需要setup，所以我们提供一个默认的setup，以便所有的fixture都能编译通过。
+上述fixture可以正常编译通过，但是遗憾的是没有定义setup的fixture中的testcase却不能编译通过了，编译期告诉我们缺少一个名为`TlpTestSetup`的父类。并不是所有的fixture都需要setup，所以我们提供一个默认的setup，以便不需要setup的fixture也都能编译通过。
 
 ~~~cpp
 // "tlp/test/details/Asserter.h"
@@ -1614,7 +1611,7 @@ FIXTURE(TestSetUpInFixture)
 using TlpTestSetup = tlp::EmptyType;
 ~~~
 
-上面我们在定义`Fixture`的头文件中定义了一个全局的类`TlpTestSetup`，它是tlp库中定义的空类的别名(`struct EmptyType {}`)。如果某一个fixture中定义了自己的`TlpTestSetup`，则会在该fixture命名空间中遮掩全局的`TlpTestSetup`，则该fixture中所有的testcase都将继承自自己的`TlpTestSetup`。否则就会继承自全局的这个空类。
+上面我们在定义`Fixture`的头文件中定义了一个全局的类`TlpTestSetup`，它是tlp库中空类的别名(`struct EmptyType {}`)。如果某一个fixture中定义了自己的`TlpTestSetup`，则会在该fixture命名空间中遮掩全局的`TlpTestSetup`，于是该fixture中所有的testcase都将继承于自己的`TlpTestSetup`。否则就会继承自全局的这个空类。
 
 至此，有没有定义setup的fixture都能工作了。
 
@@ -1644,7 +1641,7 @@ FIXTURE(TestTearDown)
 };
 ~~~
 
-如上`TEARDOWN`的定义一般在fixture中所有测试用例的前面，但执行却在每个测试用例的后面。要如何实现`TEARDOWN`呢？借助前面实现setup的经验，似乎我们需要能让用户通过`TEARDOWN`定义一个类，每个测试用例能够继承它，然后再将自身传递给它。
+如上`TEARDOWN`的定义一般在fixture中所有测试用例的前面，但执行却在每个测试用例的后面。要如何实现`TEARDOWN`呢？借助前面实现setup的经验，似乎我们需要用户通过`TEARDOWN`定义一个类，每个测试用例能够继承它，然后再将自身传递给它。
 
 于是我们想到CRTP(Curiously Recurring Template Pattern)模式，它的用法如下：
 
@@ -1680,7 +1677,7 @@ struct TlpTestCase : TlpTestTearDown<TlpTestCase>
 
 遗憾的是，上述代码并不能编译通过。原因是`TlpTestTeardown<TlpTestCase>`将TlpTestCase作为父类，所以编译器编译到这句的时候需要TlpTestCase的完整定义，而此时TlpTestCase才开始定义。
 
-这警告了我们，如果我们想这样写：`struct TlpTestCase : TlpTestTearDown<TlpTestCase>`，就得在`TlpTestTearDown<TlpTestCase>`时刻看到TlpTestCase的完整定义。那么我们是否可以将`TlpTestTearDown<TlpTestCase>`挪到TlpTestCase定义的后面。
+这警告了我们，如果TlpTestTearDown继承了TlpTestCase，就得在`TlpTestTearDown<TlpTestCase>`时刻看到TlpTestCase的完整定义。那么我们是否可以将`TlpTestTearDown<TlpTestCase>`挪到TlpTestCase定义的后面。
 
 ~~~cpp
 struct TlpTestCase
@@ -1738,11 +1735,11 @@ template<typename TestCase>  struct TlpTestTeardown	\
 #define TEARDOWN_END()  }; } };
 ~~~
 
-可以看到定义teardown将不能像setup和testcase那样使用花括号，而得要使用`TEARDOWN_BEGIN()`和`TEARDOWN_END()`。虽然不怎么雅观，但这已经是我能想到的最好办法了。
+可以看到对于teardown的定义将不能像setup和testcase那样使用花括号了，而是使用`TEARDOWN_BEGIN()`和`TEARDOWN_END()`。虽然不怎么雅观，但这已经是我能想到的最好办法了。
 
-为了让setup的定义能够teardown统一，我们也给setup的定义提供了一套对称的宏定义`SETUP_BEGIN()`，`SETUP_END()`。当fixture中需要同时出现setup和teardown时，setup可以使用和teardown一致的风格去定义。其它情况下，setup还是使用花括号的风格。
+为了让setup的定义能够和teardown统一，我们也给setup的定义提供了一套对称的宏定义`SETUP_BEGIN()`，`SETUP_END()`。当fixture中需要同时出现setup和teardown时，setup可以使用和teardown一致的风格去定义。其它情况下，setup还是使用花括号的风格。
 
-上述技术中其实还存在一个问题，由于TlpTestTeardown构造函数中的Teardown类继承的TestCase是从模板参数输入的，所以在其中是不能直接引用TestCase中的定义的，必须加上`TestCase::`前缀。为此我们实现了一个更有语义的宏``，用于显示指定teardown中某一个变量引用自TestCase。
+上述技术中其实还存在一个问题，TlpTestTeardown构造函数中Teardown类继承的TestCase是从模板参数输入的，所以在Teardown中是不能直接引用TestCase中的定义的，必须加上`TestCase::`前缀。为此我们实现了一个更有语义的宏`__test_refer()`，用于显示指定teardown中某一个变量引用自TestCase。
 
 ~~~cpp
 #define __test_refer(...)       typename TestCase::__VA_ARGS__
@@ -1773,15 +1770,15 @@ FIXTURE(TestWithSetUpAndTearDown)
 };
 ~~~
 
-我们不得不承认，引入teardown后让整个框架复杂了很多，而且风格也趋向不一致。但是对于具有不可变性的元编程来说，清理测试上下文的事情本就意义不大，所以一般在fixture中需要定义teardown的机会并不多。关键地我们没有因为引入teardown的功能损害到原有定义testcase的简洁性。而且在没有teardown的fixture中，setup仍旧可以像以前一样使用花括号。所以绝大多数情况下，还是可以接受的！
+我们不得不承认，引入teardown后让整个框架复杂了很多，而且风格也趋向不一致。但好在对于具有不可变性的元编程来说，清理测试上下文的事情本就意义不大，所以一般在fixture中需要定义teardown的机会并不多。关键地我们没有因为引入teardown的功能损害到原有定义testcase的简洁性。而且在没有teardown的fixture中，setup仍旧可以像以前一样使用花括号。所以绝大多数情况下，还是可以接受的！
 
-不过我相信或许还有更好的实现方式，不过限于本人能力，只能到此！如果你了解更好的实现方式，还请不吝赐教！
+不过我相信应该还有更好的实现方式，不过限于本人能力，只能到此！如果你了解更好的实现方式，还请不吝赐教！
 
-### Report
+### Test Report
 
 我们知道一个完整的测试框架还需要有用例过滤和用例统计汇报的功能。由于模板元编程基本是没有任何IO能力，所以单纯靠C\++模板元编程自身，用例过滤只能靠注代码了。对于用例统计汇报，倒是可以在元编程范畴内完成，但是用例统计结果靠编译告警打印出来格式太难看，所以我们最后还是使用了一些运行期C\++的IO能力。
 
-我们在`FIXTURE`和`TEST`的宏里面加了一些针对fixture和testcase的注册代码，所有用户定义的fixture和test都会被统计到。如果你希望最终能够打印出用例统计，那么定义一个main函数，调用一下`TLP_REPORT_ALL_TESTS()`即可。如下：
+我们在`FIXTURE`和`TEST`的宏里面加了一些针对fixture和testcase的注册代码，用户定义的所有fixture和test都会被统计到。如果你希望最终能够打印出用例统计结果，那么定义一个main函数，调用一下`TLP_REPORT_ALL_TESTS()`即可。如下：
 
 ~~~cpp
 #include <tlp/test/Test.hpp>
@@ -1800,7 +1797,7 @@ int main()
 
 注意上述main函数仅是为了输出测试报告。测试用例的运行仍旧是在编译期，一旦编译完成就说明所有测试用例都通过了。如果你不需要测试报告，那么就可以不用实现这个main函数。关于测试用例注册和打印的实现，完全是运行期C\++的技术，和本文无关，这里就不再赘述。
 
-至此，整个测试框架涉及到的主要技术就介绍到这里，掌握一门语言最好的方式是从对它进行测试入手。对测试框架其它代码细节感兴趣的话可以访问TLP库的源码，测试框架的所有源码在"include/tlp/test"目录下。
+至此，整个测试框架涉及到的主要技术就介绍到这里。掌握一门语言最好的方式是从对它进行测试入手，C\++模板元编程也不例外。后面对TLP库中其它内容的介绍，都会涉及到对其的测试。如果你还对该测试框架的其它代码细节感兴趣，可以直接访问TLP库，测试框架的所有源代码在"include/tlp/test"目录下。
 
 ## TLP
 
@@ -1851,7 +1848,7 @@ TLP同样提供了如下辅助元函数：
 
 ### TypeList
 
-对函数式编程来说，list是其中最基础也是最重要的数据结构。可以通过list可以轻易地构造出tree，map等复杂数据结构，所以必须熟悉list的结构和算法。
+对函数式编程来说，list是其中最基础也是最重要的数据结构。通过list可以轻易地构造出tree，map等复杂数据结构，所以必须熟悉list的结构和算法。
 
 对于模板元编程，一切操作对象已经统一到类型上，所以我们需要的是一个针对类型的list数据结构，这就是TLP库中的TypeList。
 
