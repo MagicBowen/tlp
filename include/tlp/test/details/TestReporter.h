@@ -80,6 +80,6 @@ private:
 
 TLP_NS_END
 
-#define TLP_REPORT_ALL_TESTS() int main() { return TLP_NS::TestPrintReporter::report(); }
+#define TLP_REPORT_ALL_TESTS() TLP_NS::TestPrintReporter::report()
 
 #endif

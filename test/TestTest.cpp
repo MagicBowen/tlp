@@ -11,7 +11,7 @@ FIXTURE(TestSetUp)
         using expected = __int(0);
     };
 
-    TEST("should use variable defined in setup")
+    TEST("variable defined in setup could be used in test")
     {
         ASSERT_EQ(__int(0), expected);
     };
@@ -23,7 +23,7 @@ FIXTURE(TestTearDown)
         ASSERT_EQ(__int(0), __test_refer(expected));
     TEARDOWN_END()
 
-    TEST("should use variable defined in setup")
+    TEST("variable defined in test could be used in teardown")
     {
         using expected = __int(0);
     };

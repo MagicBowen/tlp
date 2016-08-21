@@ -1,3 +1,8 @@
 #include <tlp/test/Test.hpp>
 
-TLP_REPORT_ALL_TESTS();
+int main()
+{
+    TLP_REPORT_ALL_TESTS();
+
+    return 0;
+}
