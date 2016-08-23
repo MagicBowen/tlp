@@ -1965,6 +1965,52 @@ TEST("get the length of type list")
 };
 ~~~
 
+接下来我们来实现元函数`__at()`，给它一个list和一个index，它将返回对应list中index位置的元素。如果index非法，或者list为空，则返回`__null()`。
+
+~~~cpp
+template<typename TL, typename Index> struct TypeAt;
+
+template<int V>
+struct TypeAt<NullType, IntType<V>>
+{
+    using Result = NullType;
+};
+
+template<typename H, typename T>
+struct TypeAt<TypeElem<H, T>, IntType<0>>
+{
+    using Result = H;
+};
+
+template<typename H, typename T, int i>
+struct TypeAt<TypeElem<H, T>, IntType<i>>
+{
+    using Result = typename TypeAt<T , IntType<i - 1>>::Result;
+};
+
+#define __at(...) typename TypeAt<__VA_ARGS__>::Result
+~~~
+
+如上，先定义出对于空list，返回NullType；然后定义当index是0则返回当前list头元素。最后定义当list非空，且index不为0的情况，就是返回剩余元素list中的第`i - 1`个元素。
+
+针对它的测试如下：
+
+~~~cpp
+TEST("get null from list by overflow index")
+{
+    using List = __type_list(int, char, short, long);
+
+    ASSERT_INVALID(__at(List, __int(4)));
+};
+
+TEST("get the type by index")
+{
+    using List = __type_list(int, char, short, long);
+
+    ASSERT_EQ(__at(List, __int(2)), short);
+};
+~~~
+
 #### 高阶算法
 
 ### 其它
