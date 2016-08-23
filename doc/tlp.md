@@ -61,11 +61,11 @@ C\++模板元编程当年被提出来的时候，函数式编程还没有像今�
 
 ## 模板的基本知识
 
-模板最开始作为一种更加安全的宏被引入C\++，用来解决代码在不同类型间复用的问题。后来随着标准的演进，模板被赋予的功能也越来越强大！
+模板元编程中的主要技术工具就是模板。模板最开始作为一种更加安全的宏被引入C\++，用来解决代码在不同类型间复用的问题。后来随着标准的演进，模板被赋予的功能也越来越强大！
 
-下面我们以类模板举例，介绍一些我们后面会用到的模板相关知识。
+下面我们以类模板举例，总结一下我们后面会用到的模板知识。
 
-### 类型参数
+### 模板的类型参数
 
 ~~~cpp
 #include <vector>
@@ -125,7 +125,7 @@ std::cout << charStack.pop() << std::endl;
 
 上面虽然我们用编译期函数来类比类模板，但是这时的类模板还远未达到模板元编程的要求，我们继续！
 
-### 默认模板参数
+### 模板的默认参数
 
 上面例子中，栈的实现使用了std::vector。为了让栈的实现更加灵活，我们将实现栈的容器也作为模板的参数之一。
 
@@ -241,7 +241,7 @@ private:
 
 可以看到模板的模板参数特性，可以让类模板之间通过模板参数互相组合。如果我们将类模板比作C\++编译期的函数，那么可以接受模板作为参数的类模板，就相当于一个函数的入参仍旧可以是函数，这是后面我们会介绍到的高阶函数的概念。
 
-### 模板特化
+### 模板的特化
 
 前面定义的Stack中，第二个模板参数要求支持`back`，`push_back`，`pop_back`等接口。如果我们已经有一个自定义的容器`Array`，它的定义如下：
 
@@ -579,9 +579,13 @@ Haskell是一门纯函数式语言，它通过模式匹配还进行条件选择�
 
 不同的是，C\++这种编译时计算支持的计算对象主要是整形和类型。
 
-C\++这种编译期函数式计算就是本文要介绍的C\++模板元编程，类模板在里面充当了函数的角色。本文用到的关于类模板的知识基本就是前文所述这些。后面我们将会对类模板进行规范化，让其能够和函数式计算更加地一致，最大程度发挥编译期函数式计算的威力。
+C\++这种编译期函数式计算就是本文要介绍的C\++模板元编程，类模板在里面充当了函数的角色。本文用到的关于类模板所有知识基本就是前文所述这些。后面我们将会对类模板进行规范化，让其能够和函数式计算更加地一致，最大程度发挥编译期函数式计算的威力。
 
 ## C\++模板元编程
+
+从本节开始我们将模板元编程当做一门独立的函数式语言来讨论它的方方面面。
+
+对于一个函数式编程语言，函数是它的第一等公民。所以对于模板元编程，我们首先需要定义出这门语言中的函数形态，然后基于函数讨论它的主要特征。
 
 ### 元函数
 
@@ -1330,7 +1334,7 @@ template<typename T, bool isClonable> using Creator = __if(__bool(isClonable), C
 
 在示例代码中，我们完成了几个模板元编程的基础元函数：IntType，BoolType，Value，Print，IsEqual，IfThenElse等等，并且对它们用宏进行了封装，分别是`__int()`，`__bool()`，`__value()`，`__print()`，`__is_eq()`，`__if()`。后文在使用的时候，对于某一用宏封装过的元函数，会提到“元函数Value”，可能也会提成“元函数`__value()`”，请注意它们是相同的。
 
-在前面的介绍中，我们一直将C\++模板元编程看做是一门独立的图灵完备的纯函数式语言。虽然C\++模板元编程和我们熟识的运行期C\++无论在语法还是计算模型上都有较大的差异，但他们却能最紧密无缝地集成在一起。有了模板元编程，我们就可以把C\++看成是一门两阶段语言。
+在前面的介绍中，我们一直将C\++模板元编程看做是一门独立的图灵完备的纯函数式语言。虽然C\++模板元编程和我们熟识的运行期C\++无论在语法还是计算模型上都有较大的差异，但他们却能最紧密无缝地集成在一起。有了模板元编程，我们就可以把C\++看成是一门**两阶段语言**。
 
 ![](./pics/two-phase.png)
 
@@ -1801,7 +1805,7 @@ int main()
 
 ## TLP
 
-本节开始介绍TLP库中的模板元编程组件。除了简单介绍一些基础组件外，主要讲解在模板元编程中非常重要的数据结构TypeList和其算法的实现。
+本节开始介绍TLP库中的模板元编程组件。TLP中许多基础的组件前文已经提到，这里稍作汇总。然后我们主要讲解对模板元编程非常重要的数据结构`TypeList`和其相关算法的实现。
 
 ### 基础类型和元函数
 
@@ -1840,7 +1844,7 @@ TLP同样提供了如下辅助元函数：
 - NullType：用于各种计算中返回的无效值；可以使用宏`__null()`替代；
 - EmptyType：空类，大多数用于占桩；可以使用宏`__empty()`替代；
 
-注意对NullType和EmptyType分别调用`__value()`元函数，将会返回`0xFFFFFFFF`和`0x0`。
+对NullType和EmptyType分别调用`__value()`元函数，将会返回`0xFFFFFFFF`和`0x0`。
 
 最后，TLP提供了一个元函数，用于判断表达式的返回值是否有效：
 
@@ -1856,7 +1860,110 @@ TypeList最初由Andrei Alexandrescu在《Modern C\++ Design》一书中介绍�
 
 #### 数据结构
 
+在函数式语言中list基本都是递归式结构，类似：`{elem, {elem, {elem, ...}}}`。
+
+可以看到，基本结构是一个二元组`{Head, Tail}`，Head是一个list节点，第二个元素Tail仍旧是一个类似的二元组，如此递归。
+
+对于模板元编程无论list元素还是list本身都是类型，所以我们定义基本的list结构如下：
+
+~~~cpp
+// "tlp/list/TypeElem.h"
+
+template<typename H, typename T>
+struct TypeElem
+{
+    using Head = H;
+    using Tail = T;
+};
+~~~
+
+有了`TypeElem`，我们对其组合就得到了TypeList。例如 `TypeElem<char, TypeElem<int, TypeElem<long, TypeElem<short，NullType>>>>` 是一个长度为4的list，里面的元素分别是char、int、long、short。最后的NullType是一个占位符，我们用它表示list的结束。
+
+上述结构非常简单，但是用起来却很繁琐。在定义TypeList的时候要不停重复TypeElem，看起来也不简洁。下面我们提供一个构造元函数，用来简化对其的定义。
+
+~~~cpp
+// "tlp/list/algo/TypeList.h"
+
+template<typename Head, typename ...Tails>
+struct TypeList
+{
+    using Result = TypeElem<Head, typename TypeList<Tails...>::Result>;
+};
+
+template<typename H>
+struct TypeList<H>
+{
+    using Result = TypeElem<H, NullType>;
+};
+
+#define __type_list(...) typename TypeList<__VA_ARGS__>::Result
+~~~
+
+现在看到其实TypeList是一个元函数，它通过变长模板参数来构造一个所有元素是类型的list结构。现在可以这样定义list：`__type_list(char, int, long, short)`，看起来非常的简单直观。
+
+另外，对于全是数值的list，如 `__type_list(__int(0), __int(1), __int(2))`的写法还可以再简单一些。如下我们提供了一个`__value_list()`的语法糖。
+
+~~~cpp
+template<int Head, int ...Tails>
+struct ValueList
+{
+    using Result = TypeElem<IntType<Head>, typename ValueList<Tails...>::Result>;
+};
+
+template<int H>
+struct ValueList<H>
+{
+    using Result = TypeElem<IntType<H>, NullType>;
+};
+
+TLP_NS_END
+
+#define __value_list(...) typename ValueList<__VA_ARGS__>::Result
+~~~
+
+现在可以这样定义：`__value_list(0, 1, 2, 3)`，其本质和`__type_list(__int(0), __int(1), __int(2))`是一样的。
+
+~~~cpp
+TEST("test value list")
+{
+    ASSERT_EQ(__value_list(0, 1，2), __type_list(__int(0), __int(1), __int(2)));
+};
+~~~
+
 #### 基本算法
+
+有了list的基本结构定义，我们就可以为其定义相关算法了。由于list是递归结构，所以其算法也都是递归算法。对于递归算法的设计，和数学归纳法比较类似。基本套路是先定义出算法中最显而易见的值的结果，然后再假设算法对“n”已经可计算，用其描述出“n+1”的算法。
+
+我们首先实现求list长度的算法Length。
+
+~~~cpp
+template<typename TL> struct Length;
+
+template<>
+struct Length<NullType>
+{
+    using Result = IntType<0>;
+};
+
+template<typename Head, typename Tail>
+struct Length<TypeElem<Head, Tail>>
+{
+    using Result = typename Add<IntType<1>, typename Length<Tail>::Result>::Result;
+};
+
+#define __length(...)   typename Length<__VA_ARGS__>::Result
+~~~
+
+对Length，我们首先定义出空list的值为0。对于非空list，我们假设`Length<Tail>`已经计算出来了，那么整个list的长度就是`Length<Tail>`的结果再加一。
+
+测试如下：
+
+~~~cpp
+TEST("get the length of type list")
+{
+    ASSERT_EQ(__length(__type_list(int, char, short)), __int(3));
+};
+~~~
 
 #### 高阶算法
 
