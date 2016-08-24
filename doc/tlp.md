@@ -2138,7 +2138,9 @@ struct Any<TypeElem<Head, Tail>, Pred>
 #define __any(...)   typename Any<__VA_ARGS__>::Result
 ~~~
 
-`__any()`的递归版本实现中，对list的头元素调用Pred：`Pred<Head>::Result`，如果为真，则返回TrueType；否则对list的剩余尾list继续调用`__any()`：`Any<Tail, Pred>::Result>::Result`。
+`__any()`的递归实现中，对list的头元素调用Pred：`Pred<Head>::Result`，如果为真，则返回TrueType；否则对list的剩余尾list继续调用`__any()`：`Any<Tail, Pred>::Result>::Result`；一直递归到空list，最后返回FalseType。
+
+在这里我们用了元函数`IfThenElse`，由于它的惰性，我们可以在为TrueType的时候提前停止递归。还可以这样实现：`using Result = __bool(__value(typename Pred<Head>::Result) ? true : __value(typename Any<Tail, Pred>::Result))`
 
 ### 其它
 
