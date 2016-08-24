@@ -1904,6 +1904,8 @@ struct TypeList<H>
 另外，对于全是数值的list，如 `__type_list(__int(0), __int(1), __int(2))`的写法还可以再简单一些。如下我们提供了一个`__value_list()`的语法糖。
 
 ~~~cpp
+// "tlp/list/algo/ValueList.h"
+
 template<int Head, int ...Tails>
 struct ValueList
 {
@@ -1937,6 +1939,8 @@ TEST("test value list")
 我们首先实现求list长度的算法Length。
 
 ~~~cpp
+// "tlp/list/algo/Length.h"
+
 template<typename TL> struct Length;
 
 template<>
@@ -1968,6 +1972,8 @@ TEST("get the length of type list")
 接下来我们来实现元函数`__at()`，给它一个list和一个index，它将返回对应list中index位置的元素。如果index非法，或者list为空，则返回`__null()`。
 
 ~~~cpp
+// "tlp/list/algo/TypeAt.h"
+
 template<typename TL, typename Index> struct TypeAt;
 
 template<int V>
@@ -2011,14 +2017,128 @@ TEST("get the type by index")
 };
 ~~~
 
-类似地，TLP库中一共实现了关于list的如下基本元函数：
+熟悉了递归算法的设计，类似地可以轻松实现`__append()`元函数，它的入参为list和类型T；它返回一个在入参list尾部追加类型T之后的新list；
+
+~~~cpp
+// "tlp/list/algo/Append.h"
+
+template<typename TL, typename T> struct Append;
+
+template<>
+struct Append<NullType, NullType>
+{
+    using Result = NullType;
+};
+
+template<typename T>
+struct Append<NullType, T>
+{
+    using Result = typename TypeList<T>::Result;
+};
+
+template<typename H, typename T>
+struct Append<NullType, TypeElem<H, T>>
+{
+    using Result = TypeElem<H, T>;
+};
+
+template<typename Head, typename Tail, typename T>
+struct Append<TypeElem<Head, Tail>, T>
+{
+    using Result = TypeElem<Head, typename Append<Tail, T>::Result>;
+};
+
+#define __append(...) typename Append<__VA_ARGS__>::Result
+~~~
+
+针对`__append()`元函数的测试如下：
+
+~~~cpp
+TEST("append a type to an empty list")
+{
+    ASSERT_EQ(__append(__empty_list(), char), __type_list(char));
+};
+
+TEST("append a list to an empty list")
+{
+    using List = __type_list(int, char);
+
+    ASSERT_EQ(__append(__empty_list(), List), List);
+};
+
+TEST("append an empty list_to a list")
+{
+    using List = __type_list(int, char);
+
+    ASSERT_EQ(__append(List, __empty_list()), List);
+};
+
+TEST("append a type to a list")
+{
+    using List = __type_list(int, short);
+    using Expected = __type_list(int, short, long);
+
+    ASSERT_EQ(__append(List, long), Expected);
+};
+
+TEST("append a list to a list")
+{
+    using List = __type_list(int, short);
+    using Expected = __type_list(int, short, char, long);
+
+    ASSERT_EQ(__append(List, __type_list(char, long)), Expected);
+};
+~~~
+
+上面测试用例中出现的`__empty_list()`的定义如下：
+
+~~~cpp
+// "tlp/list/EmptyList.h"
+
+using EmptyList = NullType;
+
+#define __empty_list()  EmptyList
+~~~
+
+关于基本算法的实现就介绍到这里。TLP库中一共实现了关于list的如下基本元函数：
 
 - `__length()`：入参为list，返回list的长度；
 - `__at()`：入参为list和index，返回list中第index个位置的元素；
 - `__index_of()`：入参为list和类型T，返回list中出现的第一个T的index位置；如果不存在则返回`__null()`;
 - `__append()`：入参为list和类型T，返回一个新的list。新的list为入参list尾部追加类型T之后的list；
+- `__erase()`：入参为list和类型T，返回一个新的list。新的list为入参list删除第一个出现的类型T之后的list；
+- `__erase_all()`：入参为list和类型T，返回一个新的list。新的list为入参list删除所有出现的类型T之后的list；
+- `__unique()`：入参为一个list，返回一个去除所有重复元素后的新的list。
+- `__replace()`：入参为list和两个类型T，U；返回一个将list中出现的第一个T替换成U之后的新list；
+- `__replace_all()`：入参为list和两个类型T，U；返回一个将list中出现的所有T替换成U之后的新list；
 
 #### 高阶算法
+
+针对list的高阶算法，是允许用户在使用时可以传入别的元函数做参数的元函数。在函数式语言里对于list的高阶元函数（如经典的`filter`，`map`，`fold`...），对于允许用户通过函数组合来扩展对list的操作非常有用。
+
+下面我们先实现一个简单的`__any()`高阶元函数，它接收一个list以及一个单参元函数Pred做入参（该元函数接受一个类型，返回一个BoolType类型）；`__any()`对list中每个元素调用Pred，如果Pred对某一个元素返回`__true()`，则`__any()`返回`__true()`；否则如果Pred对所有的元素都返回`__false()`，则`__any()`返回`__false()`。
+
+~~~cpp
+// "tlp/list/algo/Any.h"
+
+template<typename TL, template<typename T> class Pred> struct Any;
+
+template<template<typename T> class Pred>
+struct Any<NullType, Pred>
+{
+    using Result = FalseType;
+};
+
+template<typename Head, typename Tail, template<typename T> class Pred>
+struct Any<TypeElem<Head, Tail>, Pred>
+{
+    using Result = typename IfThenElse<typename Pred<Head>::Result, TrueType, typename Any<Tail, Pred>::Result>::Result;
+};
+
+#define __any(...)   typename Any<__VA_ARGS__>::Result
+~~~
+
+`__any()`的递归版本实现中，对list的头元素调用Pred：`Pred<Head>::Result`，如果为真，则返回TrueType；否则对list的剩余尾list继续调用`__any()`：`Any<Tail, Pred>::Result>::Result`。
 
 ### 其它
 
