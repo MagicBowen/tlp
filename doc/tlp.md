@@ -2116,7 +2116,7 @@ using EmptyList = NullType;
 
 针对list的高阶算法，是允许用户在使用时可以传入别的元函数做参数的元函数。在函数式语言里对于list的高阶元函数（如经典的`filter`，`map`，`fold`...），对于允许用户通过函数组合来扩展对list的操作非常有用。
 
-下面我们先实现一个简单的`__any()`高阶元函数，它接收一个list以及一个单参元函数Pred做入参（该元函数接受一个类型，返回一个BoolType类型）；`__any()`对list中每个元素调用Pred，如果Pred对某一个元素返回`__true()`，则`__any()`返回`__true()`；否则如果Pred对所有的元素都返回`__false()`，则`__any()`返回`__false()`。
+下面我们先实现一个简单的`__any()`高阶元函数，它接收一个list以及一个单参元函数Pred做入参（该元函数接受一个类型，返回一个BoolType类型）；`__any()`对list中每个元素调用Pred，如果Pred对某一个元素返回TrueType，则`__any()`返回TrueType；否则如果Pred对所有的元素都返回FalseType，则`__any()`返回FalseType。
 
 ~~~cpp
 // "tlp/list/algo/Any.h"
@@ -2140,7 +2140,29 @@ struct Any<TypeElem<Head, Tail>, Pred>
 
 `__any()`的递归实现中，对list的头元素调用Pred：`Pred<Head>::Result`，如果为真，则返回TrueType；否则对list的剩余尾list继续调用`__any()`：`Any<Tail, Pred>::Result>::Result`；一直递归到空list，最后返回FalseType。
 
-在这里我们用了元函数`IfThenElse`，由于它的惰性，我们可以在为TrueType的时候提前停止递归。还可以这样实现：`using Result = __bool(__value(typename Pred<Head>::Result) ? true : __value(typename Any<Tail, Pred>::Result))`
+在这里我们用了元函数`IfThenElse`，由于它的惰性，我们可以在Pred已经为当前元素求值为TrueType的时候提前停止递归，后面的元素就不用再算了。还可以这样实现：`using Result = __bool(__value(typename Pred<Head>::Result) ? true : __value(typename Any<Tail, Pred>::Result))`。这种实现用了三元表达式，但由于这种运行时技术缺乏惰性，所以实际上每个元素都被求值了！
+
+接下来我们实现元函数`__all()`。它的入参和`any()`一样，差别在于所有的元素应用Pred后都返回TrueType，`__all()`返回TrueType；否则有一个元素应用Pred后返回FalseType，则`__all()`返回FalseType。
+
+参考了`__any()`的实现，我们轻松实现`__all()`如下：
+
+~~~cpp
+template<typename TL, template<typename T> class Pred> struct All;
+
+template<template<typename T> class Pred>
+struct All<NullType, Pred>
+{
+    using Result = TrueType;
+};
+
+template<typename Head, typename Tail, template<typename T> class Pred>
+struct All<TypeElem<Head, Tail>, Pred>
+{
+    using Result = typename IfThenElse<typename Pred<Head>::Result, typename All<Tail, Pred>::Result, FalseType>::Result;
+};
+
+#define __all(...)   typename All<__VA_ARGS__>::Result
+~~~
 
 ### 其它
 
