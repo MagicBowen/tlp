@@ -3,14 +3,14 @@
 
 #include <tlp/list/algo/Any.h>
 #include <tlp/bool/algo/Not.h>
-#include <tlp/func/Negative.h>
+#include <tlp/func/NegativeOf.h>
 
 TLP_NS_BEGIN
 
 template<typename TL, template<typename T> class Pred>
 struct All
 {
-    using Result = typename Not<typename Any<TL, Negative<Pred>::template Apply>::Result>::Result;
+    using Result = typename Not<typename Any<TL, NegativeOf<Pred>::template Apply>::Result>::Result;
 };
 
 TLP_NS_END

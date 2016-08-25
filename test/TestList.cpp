@@ -5,7 +5,7 @@
 #include <tlp/bool/algo/IsEqual.h>
 #include <tlp/bool/algo/IfThenElse.h>
 #include <tlp/int/IntType.h>
-#include <tlp/func/Negative.h>
+#include <tlp/func/NegativeOf.h>
 #include <tlp/func/Forward.h>
 #include <tlp/traits/IsBaseOf.h>
 #include <tlp/traits/IsConvertible.h>

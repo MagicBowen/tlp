@@ -6,7 +6,7 @@
 TLP_NS_BEGIN
 
 template<template<typename T> class Pred>
-struct Negative
+struct NegativeOf
 {
     template<typename U>
     struct Apply
@@ -17,6 +17,6 @@ struct Negative
 
 TLP_NS_END
 
-#define __negative(...)  TLP_NS::Negative<__VA_ARGS__>::template Apply
+#define __negative_of(...)  TLP_NS::NegativeOf<__VA_ARGS__>::template Apply
 
 #endif
