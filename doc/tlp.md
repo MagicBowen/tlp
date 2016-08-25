@@ -1461,7 +1461,7 @@ static_assert(__value(__valid(T)), "TLP Error: expect "#T" be valid, but be inva
 static_assert(!(__value(__valid(T))), "TLP Error: expect "#T" be invalid, but be valid!")
 ~~~
 
-### Testcase
+### Test
 
 有了断言，我们希望把断言封装到独立的测试用例(testcase)里面。
 
@@ -1647,7 +1647,7 @@ FIXTURE(TestTearDown)
 
 如上`TEARDOWN`的定义一般在fixture中所有测试用例的前面，但执行却在每个测试用例的后面。要如何实现`TEARDOWN`呢？借助前面实现setup的经验，似乎我们需要用户通过`TEARDOWN`定义一个类，每个测试用例能够继承它，然后再将自身传递给它。
 
-于是我们想到CRTP(Curiously Recurring Template Pattern)模式，它的用法如下：
+于是我们想到`CRTP(Curiously Recurring Template Pattern)`模式，它的用法如下：
 
 ~~~cpp
 template<TestCase>
@@ -1814,37 +1814,54 @@ int main()
 TLP中定义了如下IntType的基本运算元函数：
 
 - `__int()` ：输入一个常整数，返回一个对应的IntType类型；
+
 - `__inc()` : 递增运算。例如 `__inc(__int(5))`的结果是`__int(6)`;
+
 - `__dec()` : 递减运算。例如 `__dec(__int(5))`的结果是`__int(4)`;
+
 - `__add()` : 加法运算。例如 `__add(__int(5), __int(2))`的结果是`__int(7)`;
+
 - `__sub()` : 减法运算。例如 `__sub(__int(5), __int(2))`的结果是`__int(3)`;
+
 - `__mul()` : 乘法运算。例如 `__mul(__int(5), __int(2))`的结果是`__int(10)`;
+
 - `__div()` : 除法运算。例如 `__div(__int(5), __int(2))`的结果是`__int(2)`;
+
 - `__mod()` : 取模运算。例如 `__mod(__int(5), __int(2))`的结果是`__int(1)`;
+
 - `__sum()` : 求和运算，输入元素不定长。例如 `__sum(__int(0), __int(1), __int(2))`。
 
 同样，对于BoolType我们定义如下元函数：
 
 - `__bool()`：输入一个bool值，返回一个BoolType类型；
+
 - `__true()`：等价于`__bool(true)`;
+
 - `__false()`：等价于`__bool(false)`;
+
 - `__not()`：取非操作。例如：`__not(__bool(true))`的结果是`__false()`；
+
 - `__and()`：逻辑与操作。例如：`__and(__true(), __false())`的结果是`__false()`；
+
 - `__or()`：逻辑或操作。例如：`__or(__true(), __false())`的结果是`__true()`；
 
 TLP同样提供了如下辅助元函数：
 
 - `__is_eq()`：判断两个类型是否相等，返回一个BoolType。
+
 - `__if()`：根据第一个入参BoolType的值，选择返回第二和第三个类型中的一个。如果如果为`__true()`，则返回第二个参数对应的类型，否则返回第三个参数对应的类型。
+
 - `__value()`：对类型进行求值。对于IntType和BoolType其值就是对应内部的Value值。
+
 - `__print()`：通过编译器告警打印出入参的类型值。
 
 此外，TLP中有两个特殊类型，
 
-- NullType：用于各种计算中返回的无效值；可以使用宏`__null()`替代；
-- EmptyType：空类，大多数用于占桩；可以使用宏`__empty()`替代；
+- `NullType`：用于各种计算中返回的无效值；可以使用宏`__null()`替代；
 
-对NullType和EmptyType分别调用`__value()`元函数，将会返回`0xFFFFFFFF`和`0x0`。
+- `EmptyType`：空类，大多数用于占桩；可以使用宏`__empty()`替代；
+
+对`NullType`和`EmptyType`分别调用`__value()`元函数，将会返回`0xFFFFFFFF`和`0x0`。
 
 最后，TLP提供了一个元函数，用于判断表达式的返回值是否有效：
 
@@ -2103,13 +2120,21 @@ using EmptyList = NullType;
 关于基本算法的实现就介绍到这里。TLP库中一共实现了关于list的如下基本元函数：
 
 - `__length()`：入参为list，返回list的长度；
+
 - `__at()`：入参为list和index，返回list中第index个位置的元素；
+
 - `__index_of()`：入参为list和类型T，返回list中出现的第一个T的index位置；如果不存在则返回`__null()`;
+
 - `__append()`：入参为list和类型T，返回一个新的list。新的list为入参list尾部追加类型T之后的list；
+
 - `__erase()`：入参为list和类型T，返回一个新的list。新的list为入参list删除第一个出现的类型T之后的list；
+
 - `__erase_all()`：入参为list和类型T，返回一个新的list。新的list为入参list删除所有出现的类型T之后的list；
+
 - `__unique()`：入参为一个list，返回一个去除所有重复元素后的新的list。
+
 - `__replace()`：入参为list和两个类型T，U；返回一个将list中出现的第一个T替换成U之后的新list；
+
 - `__replace_all()`：入参为list和两个类型T，U；返回一个将list中出现的所有T替换成U之后的新list；
 
 #### 高阶算法
@@ -2140,9 +2165,9 @@ struct Any<TypeElem<Head, Tail>, Pred>
 
 `__any()`的递归实现中，对list的头元素调用Pred：`Pred<Head>::Result`，如果为真，则返回TrueType；否则对list的剩余尾list继续调用`__any()`：`Any<Tail, Pred>::Result>::Result`；一直递归到空list，最后返回FalseType。
 
-在这里我们用了元函数`IfThenElse`，由于它的惰性，我们可以在Pred已经为当前元素求值为TrueType的时候提前停止递归，后面的元素就不用再算了。还可以这样实现：`using Result = __bool(__value(typename Pred<Head>::Result) ? true : __value(typename Any<Tail, Pred>::Result))`。这种实现用了三元表达式，但由于这种运行时技术缺乏惰性，所以实际上每个元素都被求值了！
+在这里我们用了元函数`IfThenElse`，由于它的惰性，我们可以在Pred为当前元素求值为TrueType的时候提前停止递归，后面的元素就不用再算了。另外也可以这样实现：`using Result = __bool(__value(typename Pred<Head>::Result) ? true : __value(typename Any<Tail, Pred>::Result))`。这种实现用了三元表达式，但由于这种运行时技术缺乏惰性，所以实际上每个元素都被求值了！
 
-接下来我们实现元函数`__all()`。它的入参和`any()`一样，差别在于所有的元素应用Pred后都返回TrueType，`__all()`返回TrueType；否则有一个元素应用Pred后返回FalseType，则`__all()`返回FalseType。
+接下来我们实现元函数`__all()`。它的入参和`any()`一样，差别在于所有的元素应用Pred后都返回TrueType，`__all()`才会返回TrueType；只要有一个元素应用Pred后返回FalseType，则`__all()`返回FalseType。
 
 参考了`__any()`的实现，我们轻松实现`__all()`如下：
 
@@ -2164,7 +2189,148 @@ struct All<TypeElem<Head, Tail>, Pred>
 #define __all(...)   typename All<__VA_ARGS__>::Result
 ~~~
 
-### 其它
+可以看到，`__all()`和`__any()`的实现基本一样！事实上，我们可以借助`__any()`来实现`__all()`，从而消除这两者之间的重复。
+
+首先我们需要借助`__any()`计算list中是否有某一元素应用Pred后为假，如果没有一个为假，则`__all()`返回真。我们知道客户传入的Pred是一个单参元函数，它在满足条件后返回真。我们需要把客户传入的Pred转变成成另一个在满足条件后返回假的单参元函数。于是我们实现了`NegativeOf`元函数，它是一个高阶函数，接受一个返回值是BoolType的单参元函数，返回一个取反之后的单参元函数。
+
+~~~cpp
+// tlp/func/NegativeOf.h
+
+template<template<typename T> class Pred>
+struct NegativeOf
+{
+    template<typename U>
+    struct Apply
+    {
+        using Result = typename Not<typename Pred<U>::Result>::Result;
+    };
+};
+
+#define __negative_of(...)  NegativeOf<__VA_ARGS__>::template Apply
+~~~
+
+最终`__all()`的新版本实现如下：
+
+~~~cpp
+// "tlp/list/algo/All.h"
+
+template<typename TL, template<typename T> class Pred>
+struct All
+{
+    using Result = typename Not<typename Any<TL, NegativeOf<Pred>::template Apply>::Result>::Result;
+};
+~~~
+
+TLP库自身的实现中对元函数的调用都使用的是其模板格式。如果使用每个元函数封装过后的宏格式的话，实现如下：
+
+~~~cpp
+template<typename TL, template<typename T> class Pred>
+struct All
+{
+    using Result = __not(__any(TL, __negative_of(Pred)));
+};
+~~~
+
+关于的测试用例如下：
+
+~~~cpp
+FIXTURE(TestAdvancedAlgo)
+{
+    __func_forward_1(IsLargerThan2Bytes, __bool((sizeof(_1) > 2)));
+
+    TEST("any one of the list satisfied the given prediction")
+    {
+        ASSERT_TRUE(__any(__type_list(char, short, int), IsLargerThan2Bytes));
+    };
+
+    TEST("none of the list satisfied the given prediction")
+    {
+        ASSERT_FALSE(__any(__type_list(char, short), IsLargerThan2Bytes));
+    };
+
+    TEST("all of the list satisfied the given prediction")
+    {
+        ASSERT_TRUE(__all(__type_list(int, long), IsLargerThan2Bytes));
+    };
+
+    TEST("any of the type in list not satisfied the given prediction")
+    {
+        ASSERT_FALSE(__all(__type_list(int, long, short), IsLargerThan2Bytes));
+    };
+}
+~~~
+
+上面的fixture中我们使用`__func_forward_1`定义了一个单参元函数`IsLargerThan2Bytes`，它会判断入参类型的size是否大于两个字节。关于__func_forward_1的介绍我们放在后面。
+
+接下来我们再来实现一个高阶元函数`__map()`，它的用法如下面的测试用例：
+
+~~~cpp
+TEST("map the list to it's size value list")
+{
+    __func_forward_1(TypeSize, __int(sizeof(_1)));
+
+    using List = __type_list(int, char, short, long);
+    using Expected = __value_list(4, 1, 2, 8);
+
+    ASSERT_EQ(__map(List, TypeSize), Expected);
+};
+~~~
+
+`__map()`的入参需要一个list和一个类型映射元函数。它会对入参list的每个元素调用映射函数，最终将list映射成一个新的list返回。`__map()`可以组合使用，如下：
+
+~~~cpp
+TEST("map the type in list to it's twice pointer type list")
+{
+    template<typename T> struct TransToPointer { using Result = T*; };
+
+    using List = __type_list(int, const char);
+    using Expected = __type_list(int**, const char**);
+
+    ASSERT_EQ(__map(__map(List, TransToPointer), TransToPointer), Expected);
+};
+~~~
+
+`__map()`的实现如下：
+
+~~~cpp
+template<typename TL, template<typename T> class Func> struct Map;
+
+template<template<typename T> class Func>
+struct Map<NullType, Func>
+{
+    using Result = NullType;
+};
+
+template<typename Head, typename Tail, template<typename T> class Func>
+struct Map<TypeElem<Head, Tail>, Func>
+{
+    using Result = TypeElem<typename Func<Head>::Result, typename Map<Tail, Func>::Result>;
+};
+
+#define __map(...) typename Map<__VA_ARGS__>::Result
+~~~
+
+TLP库一共实现了如下针对list的高阶元函数：
+
+- `__any(List, Pred(T))`：对List中每个元素调用Pred，如果有一个返回TrueType，则`__any`返回TrueType，否则返回FalseType；
+
+- `__all(List, Pred(T))`：对List中每个元素调用Pred，如果有所有都返回TrueType，则`__all`返回TrueType，否则返回FalseType；
+
+- `__transform(List1, List2, Func(T1, T2))`：遍历List1和List2，对两个list中每对元素调用Func，根据Func的返回值类型组成一共新的List返回；
+
+- `__filter(List, Pred(T))`：过滤List中所有调用Pred为真得类型，组成一个新的List返回；
+
+- `__map(List, Func(T))`：将List中每个元素调用Func映射成一个新的类型，返回映射后类型组成的新List；
+
+- `__fold(List, Acc, Func(T1, T2))`：折叠算法；将List所有元素按照Func给的算法折叠成一个值返回，Acc是折叠启动参数；
+
+- `__sort(List, Compare(T1, T2))`：将List按照传入的Compare规则进行排序，返回排序后的新List；
+
+上述没有介绍到的List的高阶算法的实现在这里就不再详述了，感兴趣请直接阅读TLP的源码。
+
+### Traits
+
+### function
 
 ## 模板元编程应用
 
