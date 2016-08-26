@@ -1867,6 +1867,72 @@ TLP同样提供了如下辅助元函数：
 
 - `__valid()`：用于判断参数中的返回值类型是否有效。默认只对NullType认为是无效的。
 
+### Traits
+
+STL的`type_traits`文件中，已经有了比较全面的C\++ traits组件，可以用来对代码做各种静态反射。TLP库中为了完成samples中的代码示例，补充了几个有用的traits工具，前面都已经介绍过。
+
+- `__is_convertible(T, U)`：用于判断类型T是否可以默认转型为U类型；
+- `__is_both_convertible(T, U)`：用于判断类型T和U之间是否可以互相转型；
+- `__is_base_of(T, U)`：用于判断类型T是否是类型U的父类；
+
+随着TLP的演进，这里会逐渐补充STL库中缺少的一些有用的traits组件。
+
+### 元函数转发
+
+前面介绍了元函数转发的概念，也就是通过已有的元函数组合，来定义新的元函数。
+
+如下我们实现一个元函数TypeSize用于求一个类型的size值：
+
+~~~cpp
+template<typename T>
+using TypeSize = __int(sizeof(T));
+~~~
+
+得益于`__int()`是个元函数，我们通过调用它实现了TypeSize。由于上述通过调用或者组合元函数来定义新的元函数的模式非常常用，为了简化一些临时场合下的定义方式，避免每次都要为形参起名字，所以TLP库中专门定义了一组宏，用来简化元函数转发的定义方式。
+
+~~~cpp
+// "tlp/func/Forward.h"
+
+#define __func_forward(Name, ...)   	\
+using Name = __VA_ARGS__
+
+#define __func_forward_1(Name, ...) 	\
+template<typename _1> using Name = __VA_ARGS__
+
+#define __func_forward_2(Name, ...) 	\
+template<typename _1, typename _2> using Name = __VA_ARGS__
+
+#define __func_forward_3(Name, ...) 	\
+template<typename _1, typename _2, typename _3> using Name = __VA_ARGS__
+
+#define __func_forward_4(Name, ...) 	\
+template<typename _1, typename _2, typename _3, typename _4> using Name = __VA_ARGS__
+~~~
+
+这组宏专门用来实现元函数转发，它默认为形参起好了从`_1`开始的名称。有了这组宏，TypeSize可以如下方式定义：
+
+~~~cpp
+__func_forward_1(TypeSize, __int(sizeof(_1)));
+~~~
+
+我们前面实现过判断一个类型是否是另一个类型的父类的元函数`__is_base_of()`，我们用它实现一个新的元函数，用来在两个类型中选择出父类类型返回。
+
+~~~cpp
+__func_forward_2(SupperOf, IfThenElse<__is_base_of(_1, _2), _1, _2>);
+~~~
+
+可以测试一下：
+
+~~~cpp
+TEST("should_choose_the_base_type")
+{
+	struct Base{};
+    struct Derived : Base{};
+
+    ASSERT_EQ(typename SupperOf<Derived, Base>::Result, Base);
+}
+~~~
+
 ### TypeList
 
 对函数式编程来说，list是其中最基础也是最重要的数据结构。通过list可以轻易地构造出tree，map等复杂数据结构，所以必须熟悉list的结构和算法。
@@ -2260,7 +2326,7 @@ FIXTURE(TestAdvancedAlgo)
 }
 ~~~
 
-上面的fixture中我们使用`__func_forward_1`定义了一个单参元函数`IsLargerThan2Bytes`，它会判断入参类型的size是否大于两个字节。关于__func_forward_1的介绍我们放在后面。
+上面的fixture中我们使用前面介绍过的`__func_forward_1`定义了一个单参元函数`IsLargerThan2Bytes`，它会判断入参类型的size是否大于两个字节。
 
 接下来我们再来实现一个高阶元函数`__map()`，它的用法如下面的测试用例：
 
@@ -2326,11 +2392,26 @@ TLP库一共实现了如下针对list的高阶元函数：
 
 - `__sort(List, Compare(T1, T2))`：将List按照传入的Compare规则进行排序，返回排序后的新List；
 
-上述没有介绍到的List的高阶算法的实现在这里就不再详述了，感兴趣请直接阅读TLP的源码。
+上述没有介绍到的List的高阶算法的实现在这里就不再详述了，感兴趣的话请直接阅读TLP的源码。TLP的“tlp/test/TestList.cpp”文件中有这些元函数的详细测试，通过测试也可以看到它们的详细用法。
 
-### Traits
+最后，高阶元函数的强大之处是可以让代码在更高的抽象层次上进行复用和组合，通过更贴近领域的语义描述出操作意图。如下测试用例中，我们想要计算一组类型中大于两字节的所有类型的size之和，我们使用前面介绍的高阶元函数进行组合来实现：
 
-### function
+~~~cpp
+TEST("calculate the total size of the types that larger than 2 bytes")
+{
+    using List = __type_list(char, short, int, long, char*, short*, int*, long*);
+
+    ASSERT_EQ(__fold(__map(__filter(List, IsLargerThan2Bytes), TypeSize) , __int(0), Add), __int(44));
+};
+~~~
+
+上述测试是在64位操作系统上的计算结果（指针、int和long都是8字节，short是4字节）。在计算中先通过`__filter()`在list中过滤出所有大于2字节的类型，然后通过`__map()`将过滤后的类型列表映射成对应的size数值列表，最后通过`__fold()`元函数进行累计求和。上述所有操作的抽象层次都将list作为一个整体，而没有对其进行分解迭代。
+
+### Test
+
+TLP库中“tlp/test”目录下是我们前面介绍过的面向C\++模板元编程的测试框架。该框架使用的时需要`#include <tlp/test/Test.hpp>`，然后就可以像前文所述那样去编写测试用例了。
+
+另外，在“tlp/test/details/Print.h”文件中定义了我们前文介绍过的用于辅助模板元编程进行调试用的打印函数`__print()`，它的参数是一个返回类型的编译期合法表达式。该元函数将会对表达式进行求值后，然后以编译器告警的方式将目标类型打印出来。使用的时候切记不要关闭编译告警选项，否则就打印不出来了。
 
 ## 模板元编程应用
 
