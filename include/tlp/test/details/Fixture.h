@@ -2,7 +2,7 @@
 #define H240DB723_EABE_43B0_B27C_0E7C3DB3F303
 
 #include <tlp/base/EmptyType.h>
-#include <tlp/utils/UniqueName.h>
+#include <tlp/test/details/utils/UniqueName.h>
 #include <tlp/test/details/TestRegister.h>
 
 ////////////////////////////////////////////////////////////////////////

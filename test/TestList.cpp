@@ -30,6 +30,9 @@
 #include <tlp/list/algo/Sort.h>
 #include <tlp/list/algo/ScatterInherits.h>
 #include <tlp/list/algo/LinearInherits.h>
+#include <tlp/int/algo/Add.h>
+
+using tlp::Add;
 
 FIXTURE(TestListBaseAlgo)
 {
@@ -187,6 +190,8 @@ FIXTURE(TestAdvancedAlgo)
 {
     __func_forward_1(IsLargerThan2Bytes, __bool((sizeof(_1) > 2)));
 
+    __func_forward_1(TypeSize, __int(sizeof(_1)));
+
     TEST("any one of the list satisfied the given prediction")
     {
         ASSERT_TRUE(__any(__type_list(char, short, int), IsLargerThan2Bytes));
@@ -228,8 +233,6 @@ FIXTURE(TestAdvancedAlgo)
 
     TEST("map the list to it's size value list")
     {
-        __func_forward_1(TypeSize, __int(sizeof(_1)));
-
         using List = __type_list(int, char, short, long);
         using Expected = __value_list(4, 1, 2, 8);
 
@@ -255,6 +258,13 @@ FIXTURE(TestAdvancedAlgo)
         ASSERT_EQ(__fold(List, __int(0), SumSize), __int(13));
     };
 
+    TEST("calculate the total size of the types that larger than 2 bytes")
+    {
+        using List = __type_list(char, short, int, long, char*, short*, int*, long*);
+
+        ASSERT_EQ(__fold(__map(__filter(List, IsLargerThan2Bytes), TypeSize) , __int(0), Add), __int(44));
+    };
+
     TEST("sort a list by the given size compared rule")
     {
         __func_forward_2(LargerSizeType, TLP_NS::IfThenElse<__bool((sizeof(_1) > sizeof(_2))), _1, _2>);
@@ -273,12 +283,12 @@ FIXTURE(TestAdvancedAlgo)
         struct Leaf2 : Branch {};
         struct Leaf3 : Branch {};
 
-        __func_forward_2(Supper, TLP_NS::IfThenElse<__is_base_of(_1, _2), _1, _2>);
+        __func_forward_2(SupperOf, TLP_NS::IfThenElse<__is_base_of(_1, _2), _1, _2>);
 
         using List = __type_list(Branch, Leaf2, Base, Leaf3, Leaf1);
         using Expected = __type_list(Base, Branch, Leaf2, Leaf3, Leaf1);
 
-        ASSERT_EQ(__sort(List, Supper), Expected);
+        ASSERT_EQ(__sort(List, SupperOf), Expected);
     };
 };
 
