@@ -1153,7 +1153,7 @@ public:
 
 上面代码中，我们在IsConvertible中定义了静态函数test的两个重载版本，一个入参类型是U，另一个是随意类型入参（`...`出现在C\++函数参数声明中表示不关心入参类型）。然后我们尝试把T传入test函数，如果T能够向U转型，则编译期会选择`Yes test(U)`版本，否则选择`No test(...)`版本。最后我们计算test返回类型的sizeof，就能判断出编译器选择了哪个版本（Yes和No是IsConvertible内部定义的两个类型，Yes的sizeof结果是1个字节，No是两个字节；sizeof是一个编译期运算符）。
 
-在上面的实现中我们用了一个小技巧，我们并没有给test直接传入T的对象，因为这样做的话我们就要承受让T生成对象的开销，而且关键的是我们对T的构造函数一无所知。所以这里声明了一个返回类型为T的静态函数`static T self()`，然后把这个函数交给test。还记得我们前面说的**一切都是函数，一切都是类型**吗？我们用self函数替代类型T的对象传入test，在编译期就能获得结果，而且避免了创建对象的开销。
+在上面的实现中我们用了一个小技巧，我们并没有给test直接传入T的对象，因为这样做的话我们就要承受让T生成对象的开销，而且关键的是我们对T的构造函数一无所知。所以这里声明了一个返回类型为T的静态函数`static T self()`，然后把这个函数交给test。还记得我们前面说的**“一切都是函数，一切都是类型”**吗？我们用self函数替代类型T的对象传入test，在编译期就能获得结果，而且避免了创建对象的开销。
 
 借助`__is_convertible`我们能够轻易的实现一个能够判断两个类型是否能够互相转型的元函数。
 
@@ -1163,7 +1163,7 @@ public:
 #define __is_both_convertible(T, U)     __and(__is_convertible(T, U), __is_convertible(U, T))
 ~~~
 
-上面代码中的`__and()`元函数，是我们前面介绍的对两个BoolType实现逻辑与的元函数。
+上面代码中的`__and()`是我们前面介绍的对两个BoolType进行逻辑与运算的元函数。
 
 现在我们可以这样使用：
 
@@ -1276,9 +1276,9 @@ struct Creator
 };
 ~~~
 
-如上我们想要一个工厂类，它能够创建入参T类型的对象。如果T支持clone方法，则采用从一个现有对象clone出新对象的方法，否则调用拷贝构造函数new出来一个新对象。Creator的第二个参数isClonable用来指示前一个参数T是否支持clone。
+如上我们希望有一个工厂类用来创建入参T类型的对象。如果T支持clone方法，则采用从一个现有对象clone出新对象，否则调用拷贝构造函数new出来一个新对象。Creator的第二个参数isClonable用来指示前一个参数T是否支持clone。
 
-遗憾的是，上述代码是不能工作的。当我们传递一个不支持clone的类进去，即使我们将isClonable设为false，编译器也会对create函数进行完整编译，会报告T缺少clone方法。
+遗憾的是，上述代码是不能工作的。当我们传递一个不支持clone的类形T进去，即使我们将isClonable设为false，编译器也会对create函数进行完整编译，会报告T缺少clone方法。
 
 ~~~cpp
 struct UnclonableObject
@@ -1286,8 +1286,6 @@ struct UnclonableObject
     UnclonableObject(){}
     UnclonableObject(const UnclonableObject&) {}
 };
-
-UnclonableObject object；
 
 Creator<UnclonableObject, false> creator;
 ~~~
@@ -1297,10 +1295,11 @@ Creator<UnclonableObject, false> creator;
 一旦我们写出如下代码，就会和我们最初预想的一致：编译失败，编译器告诉我们UnclonableObject中没有clone方法。
 
 ~~~cpp
+UnclonableObject object；
 UnclonableObject* newObject = creator.create(&object);
 ~~~
 
-解决该问题的方式很简单，就是把采用运行期分支选择`if`的实现转换成使用编译期的分支选择元函数`__if()`来实现。
+解决该问题的方式很简单，就是把使用`if`做运行期分支选择的实现转换成使用编译期的分支选择元函数`__if()`来实现。
 
 ~~~cpp
 template<typename T>
@@ -1324,9 +1323,9 @@ struct UnclonableCreator
 template<typename T, bool isClonable> using Creator = __if(__bool(isClonable), ClonableCreator<T>, UnclonableCreator<T>);
 ~~~
 
-由于模板元编程的惰性特征，`__if()`元函数在任何时候只会根据第一个入参的bool值对后面的两个参数中的一个进行求值。当我们调用`Creator<UnclonableObject, false>`时，由于我们传入的是false，`__if(__bool(false), ClonableCreator<T>, UnclonableCreator<T>)`只会对UnclonableCreator<T>具现化，所以没有再出现之前的编译错误。
+由于模板元编程的惰性特征，`__if()`元函数在任何时候只会根据第一个入参的bool值对后面的两个参数中的一个进行求值。当我们调用`Creator<UnclonableObject, false>`时，`__if(__bool(false), ClonableCreator<T>, UnclonableCreator<T>)`只会对UnclonableCreator<T>具现化，所以没有再出现之前的编译错误。
 
-利于惰性求值，在编译期选择性的做类型具现化，是一个模板元编程非常有用的特性。
+利于惰性求值，在编译期选择性的做类型具现化，是模板元编程非常有用的特性之一。
 
 ### 总结：两阶段的C\++语言
 
@@ -1875,7 +1874,7 @@ STL的`type_traits`文件中，已经有了比较全面的C\++ traits组件，�
 - `__is_both_convertible(T, U)`：用于判断类型T和U之间是否可以互相转型；
 - `__is_base_of(T, U)`：用于判断类型T是否是类型U的父类；
 
-随着TLP的演进，这里会逐渐补充STL库中缺少的一些有用的traits组件。
+随着TLP的演进，这里会继续补充STL库中缺少的但却有用的traits工具。
 
 ### 元函数转发
 
@@ -1937,7 +1936,7 @@ TEST("should_choose_the_base_type")
 
 对函数式编程来说，list是其中最基础也是最重要的数据结构。通过list可以轻易地构造出tree，map等复杂数据结构，所以必须熟悉list的结构和算法。
 
-对于模板元编程，一切操作对象已经统一到类型上，所以我们需要的是一个针对类型的list数据结构，这就是TLP库中的TypeList。
+在C\++模板元编程中，一切操作对象已经统一到类型上，所以我们需要的是一个针对类型的list数据结构，这就是TLP库中的TypeList。
 
 TypeList最初由Andrei Alexandrescu在《Modern C\++ Design》一书中介绍，这里我基于C\++11标准对其进行了改写，并丰富了它的高阶算法。得益于C\++11标准，新的实现要比原来的简单清晰很多，而且算法也更加丰富。
 
@@ -1960,9 +1959,9 @@ struct TypeElem
 };
 ~~~
 
-有了`TypeElem`，我们对其组合就得到了TypeList。例如 `TypeElem<char, TypeElem<int, TypeElem<long, TypeElem<short，NullType>>>>` 是一个长度为4的list，里面的元素分别是char、int、long、short。最后的NullType是一个占位符，我们用它表示list的结束。
+有了`TypeElem`，我们对其组合就得到了元素是类型的list。例如 `TypeElem<char, TypeElem<int, TypeElem<long, TypeElem<short，NullType>>>>` 是一个长度为4的list，里面的元素分别是char、int、long、short。最后的NullType是一个占位符，我们用它表示list的结束。
 
-上述结构非常简单，但是用起来却很繁琐。在定义TypeList的时候要不停重复TypeElem，看起来也不简洁。下面我们提供一个构造元函数，用来简化对其的定义。
+上述结构非常简单，但是用起来却很繁琐。在定义list的时候要不停重复TypeElem，非常不简洁。下面我们提供一个构造元函数，用来简化对list的定义。
 
 ~~~cpp
 // "tlp/list/algo/TypeList.h"
@@ -1982,9 +1981,9 @@ struct TypeList<H>
 #define __type_list(...) typename TypeList<__VA_ARGS__>::Result
 ~~~
 
-现在看到其实TypeList是一个元函数，它通过变长模板参数来构造一个所有元素是类型的list结构。现在可以这样定义list：`__type_list(char, int, long, short)`，看起来非常的简单直观。
+如上TypeList是一个元函数，它通过变长模板参数来构造一个所有元素是类型的list结构。现在可以这样定义list：`__type_list(char, int, long, short)`，看起来非常的简单直观。
 
-另外，对于全是数值的list，如 `__type_list(__int(0), __int(1), __int(2))`的写法还可以再简单一些。如下我们提供了一个`__value_list()`的语法糖。
+另外，对于全是数值的list，如 `__type_list(__int(0), __int(1), __int(2))`的写法也可以再简单一些。如下我们提供了一个`__value_list()`的语法糖。
 
 ~~~cpp
 // "tlp/list/algo/ValueList.h"
@@ -2001,8 +2000,6 @@ struct ValueList<H>
     using Result = TypeElem<IntType<H>, NullType>;
 };
 
-TLP_NS_END
-
 #define __value_list(...) typename ValueList<__VA_ARGS__>::Result
 ~~~
 
@@ -2017,9 +2014,11 @@ TEST("test value list")
 
 #### 基本算法
 
-有了list的结构定义，我们就可以为其定义相关算法了。由于list是递归结构，所以其算法也都是递归算法。对于递归算法的设计，和数学归纳法比较类似。基本套路是先定义出算法中最显而易见的值的结果（也就是递归结束条件），然后再假设算法对“n - 1”已经可计算，用其描述出对于“n”的算法。
+有了list的结构定义，我们就可以为其定义相关算法了。由于list是递归结构，所以其算法也都是递归算法。
 
-我们首先实现求list长度的算法Length。
+对于用惯了命令式语言中循环语句（如C语言中while、for）的程序员，刚开始接触和设计递归算法往往不是那么得心应手，但是相信通过刻意练习绝对是可以掌握这种思维方法的。一般情况下递归算法的设计和数学归纳法比较类似，基本套路是先定义出算法中最显而易见的值的结果（也就是递归结束条件），然后假设算法对“n - 1”已经可计算，再用其描述出对于“n”的算法。
+
+如下，我们首先实现求list长度的元函数`Length`。
 
 ~~~cpp
 // "tlp/list/algo/Length.h"
@@ -2041,7 +2040,7 @@ struct Length<TypeElem<Head, Tail>>
 #define __length(...)   typename Length<__VA_ARGS__>::Result
 ~~~
 
-对Length，我们首先定义出空list的值为0。对于非空list，我们假设`Length<Tail>`已经计算出来了，那么整个list的长度就是`Length<Tail>`的结果再加一。
+对`Length`，我们首先定义出空list的值为0。对于非空list，我们假设`Length<Tail>`已经计算出来了，那么整个list的长度就是`Length<Tail>`的结果再加一。
 
 测试如下：
 
@@ -2052,7 +2051,7 @@ TEST("get the length of type list")
 };
 ~~~
 
-接下来我们来实现元函数`__at()`，给它一个list和一个index，它将返回对应list中index位置的元素。如果index非法，或者list为空，则返回`__null()`。
+接下来我们来实现元函数`TypeAt`，给它一个list和一个index，它将返回对应list中index位置的元素。如果index非法，或者list为空，则返回`__null()`。
 
 ~~~cpp
 // "tlp/list/algo/TypeAt.h"
@@ -2205,7 +2204,7 @@ using EmptyList = NullType;
 
 #### 高阶算法
 
-针对list的高阶算法，是允许用户在使用时可以传入别的元函数做参数的元函数。在函数式语言里对于list的高阶元函数（如经典的`filter`，`map`，`fold`...），对于允许用户通过函数组合来扩展对list的操作非常有用。
+针对list的高阶算法，是允许用户在使用时传入别的元函数做参数的元函数。在函数式语言里对于list的高阶元函数（如经典的`filter`，`map`，`fold`...），可以轻松地让用户通过函数组合来扩展对list的操作。
 
 下面我们先实现一个简单的`__any()`高阶元函数，它接收一个list以及一个单参元函数Pred做入参（该元函数接受一个类型，返回一个BoolType类型）；`__any()`对list中每个元素调用Pred，如果Pred对某一个元素返回TrueType，则`__any()`返回TrueType；否则如果Pred对所有的元素都返回FalseType，则`__any()`返回FalseType。
 
@@ -2255,9 +2254,9 @@ struct All<TypeElem<Head, Tail>, Pred>
 #define __all(...)   typename All<__VA_ARGS__>::Result
 ~~~
 
-可以看到，`__all()`和`__any()`的实现基本一样！事实上，我们可以借助`__any()`来实现`__all()`，从而消除这两者之间的重复。
+可以看到，`__all()`和`__any()`的实现非常相像！事实上，我们可以借助`__any()`来实现`__all()`，从而消除这两者之间的重复。
 
-首先我们需要借助`__any()`计算list中是否有某一元素应用Pred后为假，如果没有一个为假，则`__all()`返回真。我们知道客户传入的Pred是一个单参元函数，它在满足条件后返回真。我们需要把客户传入的Pred转变成成另一个在满足条件后返回假的单参元函数。于是我们实现了`NegativeOf`元函数，它是一个高阶函数，接受一个返回值是BoolType的单参元函数，返回一个取反之后的单参元函数。
+首先我们需要借助`__any()`计算list中是否有某一元素应用Pred后为假，如果没有一个为假，则`__all()`返回真。我们知道客户传入给`__all()`的Pred是一个单参元函数，它在满足条件后返回真。我们需要把客户传入的Pred转变成成另一个在满足条件后返回假的单参元函数。于是我们实现了`NegativeOf`元函数，它是一个高阶函数，接受一个返回值是BoolType的单参元函数，返回一个取反之后的单参元函数。
 
 ~~~cpp
 // tlp/func/NegativeOf.h
@@ -2297,7 +2296,7 @@ struct All
 };
 ~~~
 
-关于的测试用例如下：
+相关的测试用例如下：
 
 ~~~cpp
 FIXTURE(TestAdvancedAlgo)
@@ -2407,11 +2406,15 @@ TEST("calculate the total size of the types that larger than 2 bytes")
 
 上述测试是在64位操作系统上的计算结果（指针、int和long都是8字节，short是4字节）。在计算中先通过`__filter()`在list中过滤出所有大于2字节的类型，然后通过`__map()`将过滤后的类型列表映射成对应的size数值列表，最后通过`__fold()`元函数进行累计求和。上述所有操作的抽象层次都将list作为一个整体，而没有对其进行分解迭代。
 
+#### 类型创造
+
+
+
 ### Test
 
 TLP库中“tlp/test”目录下是我们前面介绍过的面向C\++模板元编程的测试框架。该框架使用的时需要`#include <tlp/test/Test.hpp>`，然后就可以像前文所述那样去编写测试用例了。
 
-另外，在“tlp/test/details/Print.h”文件中定义了我们前文介绍过的用于辅助模板元编程进行调试用的打印函数`__print()`，它的参数是一个返回类型的编译期合法表达式。该元函数将会对表达式进行求值后，然后以编译器告警的方式将目标类型打印出来。使用的时候切记不要关闭编译告警选项，否则就打印不出来了。
+另外，在“tlp/test/details/Print.h”文件中定义了我们前文介绍过的用于辅助模板元编程进行调试用的打印函数`__print()`，它的参数是一个返回类型的编译期合法表达式。该元函数会对表达式先进行求值，然后以编译器告警的方式将目标类型打印出来。使用的时候切记不要关闭编译告警选项，否则就打印不出来了。
 
 ## 模板元编程应用
 
@@ -2422,6 +2425,8 @@ TLP库中“tlp/test”目录下是我们前面介绍过的面向C\++模板元�
 ### 类型判断
 
 举例1： dates
+
+为tlp traits增加 lambda参数的traits；
 
 ### 类型分派
 
