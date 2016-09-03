@@ -1,6 +1,7 @@
 #include <tlp/test/Test.hpp>
 #include <tlp/traits/IsConvertible.h>
 #include <tlp/traits/IsBaseOf.h>
+#include <tlp/traits/IsBuiltIn.h>
 
 FIXTURE(TestTraits)
 {
@@ -38,5 +39,13 @@ FIXTURE(TestTraits)
         ASSERT_FALSE(__is_base_of(void*, char*));
         ASSERT_TRUE(__is_base_of(Base, Derived));
         ASSERT_FALSE(__is_base_of(Derived, Base));
+    };
+
+    TEST("estimate a type whether a built in type")
+    {
+        struct Object {};
+
+        ASSERT_TRUE(__is_built_in(char));
+        ASSERT_FALSE(__is_built_in(Object));
     };
 };

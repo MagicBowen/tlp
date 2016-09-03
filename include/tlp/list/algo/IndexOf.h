@@ -4,6 +4,7 @@
 #include <tlp/list/TypeElem.h>
 #include <tlp/base/algo/Valid.h>
 #include <tlp/base/algo/Value.h>
+#include <tlp/int/IntType.h>
 #include <tlp/bool/algo/IfThenElse.h>
 
 TLP_NS_BEGIN
