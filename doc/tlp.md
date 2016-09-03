@@ -1329,7 +1329,7 @@ template<typename T, bool isClonable> using Creator = __if(__bool(isClonable), C
 
 ### 总结：两阶段的C\++语言
 
-前面我们介绍了C\++模板元编程的基础知识。我们将模板元编程的计算对象统一到类型上，引入了元函数的概念。元函数是构成模板元编程的计算基础，它支持默认参数，支持高阶函数，支持柯里化，遵守不可变性，具有惰性特征。此外我们还介绍了在模板元编程中做计算控制的模式匹配和递归的相关技巧。
+前面我们介绍了C\++模板元编程的基础知识。我们将模板元编程的计算对象统一到类型上，引入了元函数的概念。元函数是模板元编程的基础构件，它支持默认参数，支持高阶函数，支持柯里化，遵守不可变性，具有惰性特征。此外我们还介绍了在模板元编程中做计算控制的模式匹配和递归的相关技巧。
 
 在示例代码中，我们完成了几个模板元编程的基础元函数：IntType，BoolType，Value，Print，IsEqual，IfThenElse等等，并且对它们用宏进行了封装，分别是`__int()`，`__bool()`，`__value()`，`__print()`，`__is_eq()`，`__if()`。后文在使用的时候，对于某一用宏封装过的元函数，会提到“元函数Value”，可能也会提成“元函数`__value()`”，请注意它们是相同的。
 
@@ -1866,16 +1866,6 @@ TLP同样提供了如下辅助元函数：
 
 - `__valid()`：用于判断参数中的返回值类型是否有效。默认只对NullType认为是无效的。
 
-### Traits
-
-STL的`type_traits`文件中，已经有了比较全面的C\++ traits组件，可以用来对代码做各种静态反射。TLP库中为了完成samples中的代码示例，补充了几个有用的traits工具，前面都已经介绍过。
-
-- `__is_convertible(T, U)`：用于判断类型T是否可以默认转型为U类型；
-- `__is_both_convertible(T, U)`：用于判断类型T和U之间是否可以互相转型；
-- `__is_base_of(T, U)`：用于判断类型T是否是类型U的父类；
-
-随着TLP的演进，这里会继续补充STL库中缺少的但却有用的traits工具。
-
 ### 元函数转发
 
 前面介绍了元函数转发的概念，也就是通过已有的元函数组合，来定义新的元函数。
@@ -2406,15 +2396,59 @@ TEST("calculate the total size of the types that larger than 2 bytes")
 
 上述测试是在64位操作系统上的计算结果（指针、int和long都是8字节，short是4字节）。在计算中先通过`__filter()`在list中过滤出所有大于2字节的类型，然后通过`__map()`将过滤后的类型列表映射成对应的size数值列表，最后通过`__fold()`元函数进行累计求和。上述所有操作的抽象层次都将list作为一个整体，而没有对其进行分解迭代。
 
-#### 类型创造
+#### TypeList应用
+
+使用TypeList可以一次对一组类型进行操纵，关于如何应用它是一个非常有想象力的事情。例如我们可以用TypeList轻易地实现一个traits工具，用于判断某一类型是否是C\++内置类型：
+
+~~~cpp
+// "tlp/traits/IsBuiltIn.h"
+
+template<typename T>
+struct IsBuiltIn
+{
+private:
+    using BuiltInTypes = __type_list(char, wchar_t, char16_t, char32_t, bool, short, int, long, long long, float, double, long double);
+
+public:
+    using Result = __valid(__index_of(BuiltInTypes, T));
+};
+
+#define __is_built_in(...)  typename IsBuiltIn<__VA_ARGS__>::Result
+~~~
+
+~~~cpp
+TEST("estimate a type whether a built in type")
+{
+    struct Object {};
+
+    ASSERT_TRUE(__is_built_in(char));
+    ASSERT_FALSE(__is_built_in(Object));
+};
+~~~
+
+下面我们再介绍一种使用TypeList完成类型创建的设计技巧，这种设计技巧可以被用于C\++自动代码生成，威力非常强大。
 
 
+
+### Traits
+
+STL的`type_traits`文件中，已经有了比较全面的C\++ traits组件，可以用来对代码做各种静态反射。TLP库中为了完成samples中的代码示例，补充了几个有用的traits工具，前面都已经介绍过。
+
+- `__is_convertible(T, U)`：用于判断类型T是否可以默认转型为U类型；
+
+- `__is_both_convertible(T, U)`：用于判断类型T和U之间是否可以互相转型；
+
+- `__is_base_of(T, U)`：用于判断类型T是否是类型U的父类；
+
+- `__is_built_in(T)`：用于判断类型T是否为C\++内置类型；
+
+随着TLP的演进，这里会继续补充STL库中缺少的但却有用的traits工具。
 
 ### Test
 
-TLP库中“tlp/test”目录下是我们前面介绍过的面向C\++模板元编程的测试框架。该框架使用的时需要`#include <tlp/test/Test.hpp>`，然后就可以像前文所述那样去编写测试用例了。
+TLP库中“tlp/test”目录下是我们前面介绍过的面向C\++模板元编程的测试框架。该框架使用时需要`#include <tlp/test/Test.hpp>`，然后就可以像前文所述那样去编写测试用例了。
 
-另外，在“tlp/test/details/Print.h”文件中定义了我们前文介绍过的用于辅助模板元编程进行调试用的打印函数`__print()`，它的参数是一个返回类型的编译期合法表达式。该元函数会对表达式先进行求值，然后以编译器告警的方式将目标类型打印出来。使用的时候切记不要关闭编译告警选项，否则就打印不出来了。
+另外，在“tlp/test/details/Print.h”文件中定义了我们前文介绍过的用于辅助模板元编程进行调试用的打印函数`__print()`，它的参数是一个返回类型的编译期合法表达式。该元函数会对表达式先进行求值，然后以编译告警的方式将目标类型打印出来。使用的时候切记不要关闭编译告警选项，否则就打印不出来了。
 
 ## 模板元编程应用
 
