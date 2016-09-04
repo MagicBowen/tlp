@@ -2006,9 +2006,11 @@ TEST("test value list")
 
 有了list的结构定义，我们就可以为其定义相关算法了。由于list是递归结构，所以其算法也都是递归算法。
 
-对于用惯了命令式语言中循环语句（如C语言中while、for）的程序员，刚开始接触和设计递归算法往往不是那么得心应手，但是相信通过刻意练习绝对是可以掌握这种思维方法的。一般情况下递归算法的设计和数学归纳法比较类似，基本套路是先定义出算法中最显而易见的值的结果（也就是递归结束条件），然后假设算法对“n - 1”已经可计算，再用其描述出对于“n”的算法。
+一般情况下递归算法的设计和数学归纳法比较类似，基本套路是先定义出算法中最显而易见的值的结果（也就是递归结束条件），然后假设算法对“n - 1”已经可计算，再用其描述出对于“n”的算法。
 
-如下，我们首先实现求list长度的元函数`Length`。
+对于用惯了命令式语言中循环语句（如C语言中while、for）的程序员，刚开始接触和设计递归算法往往不是那么得心应手，但是相信通过刻意练习绝对是可以掌握这种思维方法的。
+
+下面，我们首先实现求list长度的元函数`Length`。
 
 ~~~cpp
 // "tlp/list/algo/Length.h"
@@ -2089,7 +2091,23 @@ TEST("get the type by index")
 };
 ~~~
 
-熟悉了递归算法的设计，类似地可以轻松实现`__append()`元函数，它的入参为list和类型T；它返回一个在入参list尾部追加类型T之后的新list；
+借助`__index_of()`我们可以实现出判断某一元素是否在list中的元函数`__is_included()`。
+
+~~~cpp
+#define __is_included(...) __valid(__index_of(__VA_ARGS__))
+~~~
+
+~~~cpp
+TEST("estimate a type whether included in a list")
+{
+    using List = __type_list(int, short, long);
+
+    ASSERT_TRUE(__is_included(List, int));
+    ASSERT_FALSE(__is_included(List, char));
+};
+~~~
+
+掌握了递归算法的设计技巧，类似地可以轻松实现`__append()`元函数，它的入参为list和类型T；它返回一个在入参list尾部追加类型T之后的新list；
 
 ~~~cpp
 // "tlp/list/algo/Append.h"
@@ -2179,6 +2197,8 @@ using EmptyList = NullType;
 - `__at()`：入参为list和index，返回list中第index个位置的元素；
 
 - `__index_of()`：入参为list和类型T，返回list中出现的第一个T的index位置；如果不存在则返回`__null()`;
+
+- `__is_included()`：入参为list和类型T，判断T是否在list中；返回对应的BoolType；
 
 - `__append()`：入参为list和类型T，返回一个新的list。新的list为入参list尾部追加类型T之后的list；
 
@@ -2396,7 +2416,7 @@ TEST("calculate the total size of the types that larger than 2 bytes")
 
 上述测试是在64位操作系统上的计算结果（指针、int和long都是8字节，short是4字节）。在计算中先通过`__filter()`在list中过滤出所有大于2字节的类型，然后通过`__map()`将过滤后的类型列表映射成对应的size数值列表，最后通过`__fold()`元函数进行累计求和。上述所有操作的抽象层次都将list作为一个整体，而没有对其进行分解迭代。
 
-#### TypeList应用
+#### TypeList的应用
 
 使用TypeList可以一次对一组类型进行操纵，关于如何应用它是一个非常有想象力的事情。例如我们可以用TypeList轻易地实现一个traits工具，用于判断某一类型是否是C\++内置类型：
 
@@ -2410,7 +2430,7 @@ private:
     using BuiltInTypes = __type_list(char, wchar_t, char16_t, char32_t, bool, short, int, long, long long, float, double, long double);
 
 public:
-    using Result = __valid(__index_of(BuiltInTypes, T));
+	using Result = __is_included(BuiltInTypes, T);
 };
 
 #define __is_built_in(...)  typename IsBuiltIn<__VA_ARGS__>::Result
@@ -2428,7 +2448,75 @@ TEST("estimate a type whether a built in type")
 
 下面我们再介绍一种使用TypeList完成类型创建的设计技巧，这种设计技巧可以被用于C\++自动代码生成，威力非常强大。
 
+TLP中list的算法里有一个`__scatter_inherits()`，它让用户传入一个TypeList，以及一个模板`template<typename> class Unit`。`__scatter_inherits()`可以生成一个目标类，这个目标类继承自每个TypeList的元素应用Unit后的类型。
 
+~~~cpp
+template<typename T> struct Holder { T field; };
+
+using Aggregator = __scatter_inherits(__type_list(int, short, char), Holder);
+~~~
+
+如上我们通过`__scatter_inherits()`创建了类型`Aggregator`，它继承自`Holder<int>`、`Holder<short>`、`Holder<char>`（见下面图示）。所以相当于`Aggregator`包含三个类型分别是int、short和char的成员变量。可以这样调用它的成员变量：
+
+~~~cpp
+Aggregator object;
+
+object.Holder<int>::field = 5;
+object.Holder<char>::field = 'a';
+~~~
+
+![](./pics/aggregator.png)
+
+`__scatter_inherits()`的实现如下：
+
+~~~cpp
+// "tlp/list/algo/ScatterInherits.h"
+
+template<typename TL, template<typename> class Unit> struct ScatterInherits;
+
+template<template<typename> class Unit>
+struct ScatterInherits<NullType, Unit>
+{
+};
+
+template<typename Atom, template<typename> class Unit>
+struct ScatterInherits : Unit<Atom>
+{
+};
+
+template<typename Head, typename Tail, template<typename> class Unit>
+struct ScatterInherits<TypeElem<Head, Tail>, Unit>
+: ScatterInherits<Head, Unit>
+, ScatterInherits<Tail, Unit>
+{
+};
+
+#define __scatter_inherits(...) ScatterInherits<__VA_ARGS__>
+~~~
+
+`__scatter_inherits()`的实现并不复杂，它采用多重继承的方式，递归地继承自`Holder<T>`。
+
+有时我们想控制让这种继承关系能够保持一条单一继承链。于是TLP同时提供了`__linear_inherits()`，它的参数和`__scatter_inherits()`相同，差别是`__linear_inherits()`的继承关系是一条单向继承链。
+
+下面的代码示例中，我们创建了类型`Aggregator`，它包含一组重载的成员方法`void visit(const T& t)`。
+
+~~~cpp
+template<typename T, typename Base>
+struct Holder : Base
+{
+    void visit(const T& t)
+    {
+        std::cout << t << std::endl;
+    };
+};
+
+using Aggregator = __linear_inherits(__type_list(int, short, char), Holder);
+
+Aggregator object;
+object.visit('a');
+~~~
+
+上面代码示例中使用了`__linear_inherits()`，所以Aggregator的继承关系图是线性的。关于`__linear_inherits()`的具体实现请参考“tlp/list/algo/LinearInherits.h”。
 
 ### Traits
 
