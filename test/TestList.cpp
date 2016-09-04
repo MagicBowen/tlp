@@ -98,6 +98,14 @@ FIXTURE(TestListBaseAlgo)
         ASSERT_EQ(__index_of(List, long), __int(2));
     };
 
+    TEST("estimate a type whether included in a list")
+    {
+        using List = __type_list(int, short, long);
+
+        ASSERT_TRUE(__is_included(List, int));
+        ASSERT_FALSE(__is_included(List, char));
+    };
+
     TEST("append a type to an empty list")
     {
         ASSERT_EQ(__append(__empty_list(), char), __type_list(char));
@@ -296,20 +304,44 @@ FIXTURE(TestInheritsAggregateAlgo)
 {
     TEST("scatter inherits from a type list")
     {
-        template<typename T> struct Holder { T t; };
+        template<typename T> struct Holder { T field; };
 
         using Aggregator = __scatter_inherits(__type_list(int, short, char), Holder);
 
         ASSERT_TRUE(__is_base_of(Holder<int>, Aggregator));
         ASSERT_FALSE(__is_base_of(Holder<int>, Holder<short>));
+
+        void testField()
+        {
+            Aggregator object;
+
+            object.Holder<int>::field = -5;
+            object.Holder<short>::field = 2;
+            object.Holder<char>::field = 'a';
+        }
     };
 
     TEST("linear inherits from a type list")
     {
-        template<typename T, typename Base> struct Holder : Base { T t; };
+        template<typename T, typename Base>
+        struct Holder : Base
+        {
+            void visit(const T& t)
+            {
+                std::cout << t << std::endl;
+            };
+        };
 
         using Aggregator = __linear_inherits(__type_list(int, short, char), Holder);
 
         ASSERT_TRUE(__is_base_of(Holder<char, __empty()>, Aggregator));
+
+        void testFunc()
+        {
+            Aggregator object;
+
+            object.visit('a');
+            object.visit(-5);
+        }
     };
 };

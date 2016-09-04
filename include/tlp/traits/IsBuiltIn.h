@@ -16,7 +16,7 @@ private:
                                      int, long, long long, float, double, long double);
 
 public:
-    using Result = __valid(__index_of(BuiltInTypes, T));
+    using Result = __is_included(BuiltInTypes, T);
 };
 
 TLP_NS_END
