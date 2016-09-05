@@ -2520,7 +2520,9 @@ object.visit('a');
 
 ### Traits
 
-STL的`type_traits`文件中，已经有了比较全面的C\++ traits组件，可以用来对代码做各种静态反射。TLP库中为了完成samples中的代码示例，补充了几个有用的traits工具，前面都已经介绍过。
+C\++标准库STL中的`type_traits`文件中，已经有了比较全面的C\++ traits组件，可以用来对代码做各种静态反射。
+
+TLP库中补充了如下几个有用的traits工具，这些traits在后面介绍的TLP的sample代码中会用到。
 
 - `__is_convertible(T, U)`：用于判断类型T是否可以默认转型为U类型；
 
@@ -2530,7 +2532,88 @@ STL的`type_traits`文件中，已经有了比较全面的C\++ traits组件，�
 
 - `__is_built_in(T)`：用于判断类型T是否为C\++内置类型；
 
-随着TLP的演进，这里会继续补充STL库中缺少的但却有用的traits工具。
+- `__lambda_return(Lambda)`：针对一个Lambda表达式类型，计算其返回值类型；
+
+- `__lambda_paras(Lambda)`：针对一个Lambda表达式类型，计算其参数类型；将所有参数类型放在一个TypeList中返回；
+
+- `__lambda_para(Lambda，Index)`：针对一个Lambda表达式类型，返回其Index位置的参数的类型。如果没有参数返回NullType；
+
+这些traits工具的实现大多在前面都已经介绍过，除过几个关于lambda的。
+
+C\++11引入了lambda特性，这是一个非常有用的特性，尤其对于编写框架。现实中我们经常把变化的算法交给客户自定义，然后通过语言提供的技术手段再注入给框架。相比传统的使用虚接口做注入，支持lambda会让客户的代码更加简洁和紧凑。在框架中，我们可能会要提取用户注入的lambda表达式的返回值类型或者参数类型。TLP中的`__lambda_return()`、`__lambda_paras()`和`__lambda_para()`就是帮助代码完成这些事情的。它们的实现如下：
+
+~~~cpp
+// "tlp/traits/LambdaTraits.h"
+
+template<typename T>
+struct LambdaTraits
+: LambdaTraits<decltype(&T::operator())>
+{
+};
+
+template<typename C, typename R, typename ... Args>
+struct LambdaTraits<R (C::*)(Args...) const>
+{
+    using ReturnType = R;
+    using ParaTypes = typename TypeList<Args...>::Result;
+};
+
+#define __lambda_return(...)  typename LambdaTraits<__VA_ARGS__>::ReturnType
+
+#define __lambda_paras(...)   typename  LambdaTraits<__VA_ARGS__>::ParaTypes
+
+#define __lambda_para(lambda, index) __at(__lambda_paras(lambda), __int(index))
+~~~
+
+如上，我们主要靠模板特化的模式匹配特性来萃取出我们想要的类型信息的:`template<typename C, typename R, typename ... Args>
+struct LambdaTraits<R (C::*)(Args...) const>`。我们把返回值类型保存在`ReturnType`，而把所有的参数类型保存在一个TypeList中：`using ParaTypes = typename TypeList<Args...>::Result`。
+
+可以如下测试这些lambda traits：
+
+~~~cpp
+TEST("calculate the return type and parameter types of a lambda")
+{
+    template<typename T>
+    void testLambdaTraits(const T&)
+    {
+        ASSERT_EQ(__lambda_return(T), int);
+        ASSERT_EQ(__lambda_paras(T), __type_list(const int*, char));
+        ASSERT_EQ(__lambda_para(T, 0), const int*);
+        ASSERT_EQ(__lambda_para(T, 1), char);
+        ASSERT_EQ(__lambda_para(T, 2), __null());
+    }
+
+    void run()
+    {
+        testLambdaTraits([](const int* x, char y){ return *x + y; });
+    }
+}；
+~~~
+
+上面我们对lambda表达式`[](const int* x, char y){ return *x + y; }`进行了萃取，判断其返回类型是`int`，参数类型分别是`const int *`和`char`。
+
+上面的测试中，之所以要定义`testLambdaTraits`函数，主要是为了从lambda表达式对象中提取出它的类型，然后再传给`__lambda_return()`等。这种靠函数模板来根据对象变量来推导其类型的手段，在C\++11之前是一种常用技巧。由于C\++11引入了`decltype`关键字，所以可以不用这么绕了！我们重新实现测试用例如下：
+
+~~~cpp
+TEST("calculate the return type and parameter types of a lambda")
+{
+    void run()
+    {
+        auto f = [](const int* x, char y){ return *x + y; };
+        using Lambda = decltype(f);
+
+        ASSERT_EQ(__lambda_return(Lambda), int);
+        ASSERT_EQ(__lambda_paras(Lambda), __type_list(const int*, char));
+        ASSERT_EQ(__lambda_para(Lambda, 0), const int*);
+        ASSERT_EQ(__lambda_para(Lambda, 1), char);
+        ASSERT_EQ(__lambda_para(Lambda, 2), __null());
+    }
+};
+~~~
+
+之所以还需要`run()`方法，是因为TEST本质上是一个类，而`auto f`不能是定义为类的成员的，但是可以定义到函数里面。
+
+关于TLP中的traits就介绍到这里，更多的关于traits的应用在后面的还会专门介绍。
 
 ### Test
 
