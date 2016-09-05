@@ -2,6 +2,7 @@
 #include <tlp/traits/IsConvertible.h>
 #include <tlp/traits/IsBaseOf.h>
 #include <tlp/traits/IsBuiltIn.h>
+#include <tlp/traits/LambdaTraits.h>
 
 FIXTURE(TestTraits)
 {
@@ -47,5 +48,20 @@ FIXTURE(TestTraits)
 
         ASSERT_TRUE(__is_built_in(char));
         ASSERT_FALSE(__is_built_in(Object));
+    };
+
+    TEST("calculate the return type and parameter types of a lambda")
+    {
+        void run()
+        {
+            auto f = [](const int* x, char y){ return *x + y; };
+            using Lambda = decltype(f);
+
+            ASSERT_EQ(__lambda_return(Lambda), int);
+            ASSERT_EQ(__lambda_paras(Lambda), __type_list(const int*, char));
+            ASSERT_EQ(__lambda_para(Lambda, 0), const int*);
+            ASSERT_EQ(__lambda_para(Lambda, 1), char);
+            ASSERT_EQ(__lambda_para(Lambda, 2), __null());
+        }
     };
 };

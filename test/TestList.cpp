@@ -311,7 +311,7 @@ FIXTURE(TestInheritsAggregateAlgo)
         ASSERT_TRUE(__is_base_of(Holder<int>, Aggregator));
         ASSERT_FALSE(__is_base_of(Holder<int>, Holder<short>));
 
-        void testField()
+        void tryFields()
         {
             Aggregator object;
 
@@ -336,7 +336,7 @@ FIXTURE(TestInheritsAggregateAlgo)
 
         ASSERT_TRUE(__is_base_of(Holder<char, __empty()>, Aggregator));
 
-        void testFunc()
+        void tryFunctions()
         {
             Aggregator object;
 
