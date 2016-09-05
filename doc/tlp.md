@@ -2448,7 +2448,7 @@ TEST("estimate a type whether a built in type")
 
 下面我们再介绍一种使用TypeList完成类型创建的设计技巧，这种设计技巧可以被用于C\++自动代码生成，威力非常强大。
 
-TLP中list的算法里有一个`__scatter_inherits()`，它让用户传入一个TypeList，以及一个模板`template<typename> class Unit`。`__scatter_inherits()`可以生成一个目标类，这个目标类继承自每个TypeList的元素应用Unit后的类型。
+TLP中list的算法里有一个`__scatter_inherits()`，它让用户传入一个TypeList，以及一个模板`template<typename> class Unit`。`__scatter_inherits()`可以生成一个目标类，这个目标类继承自每个TypeList的元素应用Unit后的类型。下面是一个例子：
 
 ~~~cpp
 template<typename T> struct Holder { T field; };
@@ -2496,7 +2496,7 @@ struct ScatterInherits<TypeElem<Head, Tail>, Unit>
 
 `__scatter_inherits()`的实现并不复杂，它采用多重继承的方式，递归地继承自`Holder<T>`。
 
-有时我们想控制让这种继承关系能够保持一条单一继承链。于是TLP同时提供了`__linear_inherits()`，它的参数和`__scatter_inherits()`相同，差别是`__linear_inherits()`的继承关系是一条单向继承链。
+有时我们想控制让这种继承关系能够保持单一继承。于是TLP同时提供了`__linear_inherits()`，它的参数和`__scatter_inherits()`相同，差别是`__linear_inherits()`创建的类型的继承关系是一条单向继承链。
 
 下面的代码示例中，我们创建了类型`Aggregator`，它包含一组重载的成员方法`void visit(const T& t)`。
 
@@ -2514,9 +2514,12 @@ using Aggregator = __linear_inherits(__type_list(int, short, char), Holder);
 
 Aggregator object;
 object.visit('a');
+object.visit(-5);
 ~~~
 
 上面代码示例中使用了`__linear_inherits()`，所以Aggregator的继承关系图是线性的。关于`__linear_inherits()`的具体实现请参考“tlp/list/algo/LinearInherits.h”。
+
+这两个工具：`__scatter_inherits()`和`__linear_inherits()`都允许客户通过一个TypeList和一个Unit模板来做类型生成，差别仅在于目标类型的继承方式不同。它们的强大之处在于它们通过组合的手段来生成目标类型，而把组合元素以一个数据结构和算法的方式交给了客户。
 
 ### Traits
 
@@ -2538,9 +2541,9 @@ TLP库中补充了如下几个有用的traits工具，这些traits在后面介�
 
 - `__lambda_para(Lambda，Index)`：针对一个Lambda表达式类型，返回其Index位置的参数的类型。如果没有参数返回NullType；
 
-这些traits工具的实现大多在前面都已经介绍过，除过几个关于lambda的。
+这些traits工具的实现大多在前面都已经介绍过，除过最后三个关于lambda的。
 
-C\++11引入了lambda特性，这是一个非常有用的特性，尤其对于编写框架。现实中我们经常把变化的算法交给客户自定义，然后通过语言提供的技术手段再注入给框架。相比传统的使用虚接口做注入，支持lambda会让客户的代码更加简洁和紧凑。在框架中，我们可能会要提取用户注入的lambda表达式的返回值类型或者参数类型。TLP中的`__lambda_return()`、`__lambda_paras()`和`__lambda_para()`就是帮助代码完成这些事情的。它们的实现如下：
+C\++11引入了lambda特性，这是一个非常有用的特性，尤其对于编写框架。现实中我们经常把变化的算法交给客户自定义，然后通过语言提供的技术手段再注入给框架。相比传统使用虚接口做注入，支持lambda会让客户的代码更加简洁和紧凑。在框架中，我们可能会要提取用户注入的lambda表达式的返回值类型或者参数类型。TLP中的`__lambda_return()`、`__lambda_paras()`和`__lambda_para()`就是帮助代码完成这些事情的。它们的实现如下：
 
 ~~~cpp
 // "tlp/traits/LambdaTraits.h"
@@ -2592,7 +2595,7 @@ TEST("calculate the return type and parameter types of a lambda")
 
 上面我们对lambda表达式`[](const int* x, char y){ return *x + y; }`进行了萃取，判断其返回类型是`int`，参数类型分别是`const int *`和`char`。
 
-上面的测试中，之所以要定义`testLambdaTraits`函数，主要是为了从lambda表达式对象中提取出它的类型，然后再传给`__lambda_return()`等。这种靠函数模板来根据对象变量来推导其类型的手段，在C\++11之前是一种常用技巧。由于C\++11引入了`decltype`关键字，所以可以不用这么绕了！我们重新实现测试用例如下：
+上面的测试中，之所以要定义`testLambdaTraits`函数，主要是为了从lambda表达式对象中提取出它的类型，然后再传给`__lambda_return()`等。这种靠函数模板来对具体对象和变量来推导其类型的手段，在C\++11之前是一种常用技巧。由于C\++11引入了`decltype`关键字，所以以后都不用再这么绕了！我们重新实现测试用例如下：
 
 ~~~cpp
 TEST("calculate the return type and parameter types of a lambda")
@@ -2622,6 +2625,8 @@ TLP库中“tlp/test”目录下是我们前面介绍过的面向C\++模板元�
 另外，在“tlp/test/details/Print.h”文件中定义了我们前文介绍过的用于辅助模板元编程进行调试用的打印函数`__print()`，它的参数是一个返回类型的编译期合法表达式。该元函数会对表达式先进行求值，然后以编译告警的方式将目标类型打印出来。使用的时候切记不要关闭编译告警选项，否则就打印不出来了。
 
 ## 模板元编程应用
+
+### 数值计算
 
 ### traits
 
