@@ -10,7 +10,6 @@ TLP_NS_BEGIN
 #define __func_forward_2(Name, ...)  template<typename _1, typename _2> using Name = __VA_ARGS__
 #define __func_forward_3(Name, ...)  template<typename _1, typename _2, typename _3> using Name = __VA_ARGS__
 #define __func_forward_4(Name, ...)  template<typename _1, typename _2, typename _3, typename _4> using Name = __VA_ARGS__
-#define __func_forward_oo(Name, ...) template<typename ..._oo> using Name = __VA_ARGS__
 
 TLP_NS_END
 

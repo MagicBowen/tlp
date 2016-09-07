@@ -1896,9 +1896,6 @@ template<typename _1, typename _2, typename _3> using Name = __VA_ARGS__
 
 #define __func_forward_4(Name, ...) 	\
 template<typename _1, typename _2, typename _3, typename _4> using Name = __VA_ARGS__
-
-#define __func_forward_oo(Name, ...) 	\
-template<typename ... _oo> using Name = __VA_ARGS__
 ~~~
 
 这组宏专门用来实现元函数转发，它默认为形参起好了从`_1`开始的名称。有了这组宏，TypeSize可以如下方式定义：
@@ -1924,8 +1921,6 @@ TEST("should_choose_the_base_type")
     ASSERT_EQ(typename SupperOf<Derived, Base>::Result, Base);
 }
 ~~~
-
-最后一个`__func_forward_oo`表示变长参数元函数，其中变长参数名是`_oo...`，比较像数学中的无穷号。关于`__func_forward_oo`在后面介绍模板元编程应用时，我们会在一个数三角形的例子中使用到。
 
 ### TypeList
 

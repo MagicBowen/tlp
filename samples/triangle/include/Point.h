@@ -6,9 +6,9 @@
 
 namespace triangle
 {
-    __func_forward_1(Point, _1);
+    template<int N> struct Point{};
 }
 
-#define __p(N)          triangle::Point<__int(N)>
+#define __p(N)  triangle::Point<N>
 
 #endif
