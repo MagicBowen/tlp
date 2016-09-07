@@ -1896,6 +1896,9 @@ template<typename _1, typename _2, typename _3> using Name = __VA_ARGS__
 
 #define __func_forward_4(Name, ...) 	\
 template<typename _1, typename _2, typename _3, typename _4> using Name = __VA_ARGS__
+
+#define __func_forward_oo(Name, ...) 	\
+template<typename ... _oo> using Name = __VA_ARGS__
 ~~~
 
 这组宏专门用来实现元函数转发，它默认为形参起好了从`_1`开始的名称。有了这组宏，TypeSize可以如下方式定义：
@@ -1922,6 +1925,8 @@ TEST("should_choose_the_base_type")
 }
 ~~~
 
+最后一个`__func_forward_oo`表示变长参数元函数，其中变长参数名是`_oo...`，比较像数学中的无穷号。关于`__func_forward_oo`在后面介绍模板元编程应用时，我们会在一个数三角形的例子中使用到。
+
 ### TypeList
 
 对函数式编程来说，list是其中最基础也是最重要的数据结构。通过list可以轻易地构造出tree，map等复杂数据结构，所以必须熟悉list的结构和算法。
@@ -1947,11 +1952,25 @@ struct TypeElem
     using Head = H;
     using Tail = T;
 };
+
+#define __type_elem(...)  TypeElem<__VA_ARGS__>
 ~~~
 
-有了`TypeElem`，我们对其组合就得到了元素是类型的list。例如 `TypeElem<char, TypeElem<int, TypeElem<long, TypeElem<short，NullType>>>>` 是一个长度为4的list，里面的元素分别是char、int、long、short。最后的NullType是一个占位符，我们用它表示list的结束。
+有了`TypeElem`，我们对其组合就得到了元素是类型的list。例如:
 
-上述结构非常简单，但是用起来却很繁琐。在定义list的时候要不停重复TypeElem，非常不简洁。下面我们提供一个构造元函数，用来简化对list的定义。
+~~~cpp
+using List = TypeElem<char, TypeElem<int, TypeElem<long, TypeElem<short，NullType>>>>;
+~~~
+
+上例中，List是一个长度为4的类型列表，它的元素分别是char、int、long、short。最后的NullType是一个占位符，我们用它表示list的结束。
+
+如果使用宏的版本，可以写的稍微好看些:
+
+~~~cpp
+using List = __type_elem(char, __type_elem(int, __type_elem(long, __type_elem(short, __null()))));
+~~~
+
+上述列表的结构虽然非常简单，但是写起来却十分繁琐。在定义list的时候要不停重复`__type_elem`，非常不简洁。下面我们提供一个构造元函数，用来简化对list的定义。
 
 ~~~cpp
 // "tlp/list/algo/TypeList.h"
@@ -2211,6 +2230,12 @@ using EmptyList = NullType;
 - `__replace()`：入参为list和两个类型T，U；返回一个将list中出现的第一个T替换成U之后的新list；
 
 - `__replace_all()`：入参为list和两个类型T，U；返回一个将list中出现的所有T替换成U之后的新list；
+
+- `__is_subset()`：入参为两个list，判断前一个list是否为后一个的子集，返回BoolType；
+
+- `__belong()`：入参为一个list和一个list的集合Lists，判断list是否为Lists集合中任一元素的子集，返回BoolType；
+
+- `__comb()`：入参为list和一个`__int(N)`，返回由list对于N的所有排列组合的列表；
 
 #### 高阶算法
 

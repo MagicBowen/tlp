@@ -2,7 +2,7 @@
 #define H697DBCEC_12E1_4BA8_A95D_1ADF47ABBA80
 
 #include <tlp/list/algo/TypeList.h>
-#include <tlp/list/algo/IndexOf.h>
+#include <tlp/list/algo/IsIncluded.h>
 #include <tlp/bool/BoolType.h>
 #include <tlp/base/algo/Valid.h>
 

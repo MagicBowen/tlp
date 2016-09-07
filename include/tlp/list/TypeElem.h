@@ -14,4 +14,6 @@ struct TypeElem
 
 TLP_NS_END
 
+#define __type_elem(...)    TLP_NS::TypeElem<__VA_ARGS__>
+
 #endif

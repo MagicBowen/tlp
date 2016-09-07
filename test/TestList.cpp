@@ -15,12 +15,16 @@
 #include <tlp/list/algo/Length.h>
 #include <tlp/list/algo/TypeAt.h>
 #include <tlp/list/algo/IndexOf.h>
+#include <tlp/list/algo/IsIncluded.h>
 #include <tlp/list/algo/Append.h>
 #include <tlp/list/algo/Erase.h>
 #include <tlp/list/algo/EraseAll.h>
 #include <tlp/list/algo/Unique.h>
 #include <tlp/list/algo/Replace.h>
 #include <tlp/list/algo/ReplaceAll.h>
+#include <tlp/list/algo/IsSubset.h>
+#include <tlp/list/algo/Belong.h>
+#include <tlp/list/algo/Comb.h>
 #include <tlp/list/algo/Any.h>
 #include <tlp/list/algo/All.h>
 #include <tlp/list/algo/Transform.h>
@@ -104,6 +108,16 @@ FIXTURE(TestListBaseAlgo)
 
         ASSERT_TRUE(__is_included(List, int));
         ASSERT_FALSE(__is_included(List, char));
+    };
+
+    TEST("estimate a list whether a subset of another list")
+    {
+        using List = __type_list(int, short, long);
+
+        ASSERT_TRUE(__is_subset(__type_list(int), List));
+        ASSERT_TRUE(__is_subset(__type_list(int, short), List));
+        ASSERT_TRUE(__is_subset(__type_list(int, long, short), List));
+        ASSERT_FALSE(__is_subset(__type_list(int, long, short, char), List));
     };
 
     TEST("append a type to an empty list")
@@ -191,6 +205,56 @@ FIXTURE(TestListBaseAlgo)
         using Expected = __type_list(int, int, long, int);
 
         ASSERT_EQ(__replace_all(List, short, int), Expected);
+    };
+
+    TEST("empty list is the subset of any list")
+    {
+        ASSERT_TRUE(__is_subset(__empty_list(), __empty_list()));
+        ASSERT_TRUE(__is_subset(__empty_list(), __value_list(1)));
+    };
+
+    TEST("list with elements is not the subset of empty list")
+    {
+        ASSERT_FALSE(__is_subset(__value_list(1), __empty_list()));
+    };
+
+    TEST("empty list belongs to any lists")
+    {
+        ASSERT_TRUE(__belong(__empty_list(), __value_list(1)));
+    };
+
+    TEST("sublist belongs to lists")
+    {
+        using Lists = __type_list( __value_list(1, 2)
+                                 , __value_list(2, 3));
+
+        ASSERT_TRUE(__belong(__value_list(2, 3), Lists));
+        ASSERT_TRUE(__belong(__value_list(3), Lists));
+        ASSERT_FALSE(__belong(__value_list(1, 3), Lists));
+    };
+
+    TEST("combination 1 of a list")
+    {
+        using List = __value_list(4, 2 ,3);
+        using Expected = __type_list(__value_list(4), __value_list(2), __value_list(3));
+
+        ASSERT_EQ(__comb(List, __int(1)), Expected);
+    };
+
+    TEST("combination length of a list")
+    {
+        using List = __value_list(4, 2 ,3);
+        using Expected = __type_list(__value_list(4, 2, 3));
+
+        ASSERT_EQ(__comb(List, __int(3)), Expected);
+    };
+
+    TEST("combination any of a list")
+    {
+        using List = __value_list(4, 2 ,3);
+        using Expected = __type_list(__value_list(4, 2), __value_list(4, 3), __value_list(2, 3));
+
+        ASSERT_EQ(__comb(List, __int(2)), Expected);
     };
 };
 

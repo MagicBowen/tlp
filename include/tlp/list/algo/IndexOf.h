@@ -36,6 +36,5 @@ public:
 TLP_NS_END
 
 #define __index_of(...)    typename TLP_NS::IndexOf<__VA_ARGS__>::Result
-#define __is_included(...) __valid(__index_of(__VA_ARGS__))
 
 #endif
