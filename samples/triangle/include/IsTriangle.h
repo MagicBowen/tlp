@@ -2,10 +2,11 @@
 #define H1FA6AF36_DFE1_4640_823A_39D9A921D312
 
 #include <tlp/func/Forward.h>
-#include <tlp/list/algo/TypeList.h>
+#include <tlp/list/TypeElem.h>
 #include <tlp/list/algo/Belong.h>
 #include <tlp/bool/algo/Not.h>
 #include <tlp/bool/algo/And.h>
+#include <Points.h>
 
 namespace triangle
 {
@@ -15,8 +16,8 @@ namespace triangle
     struct IsTriangle<__type_elem(P1, __type_elem(P2, __type_elem(P3, __null()))), Lines>
     {
     private:
-        __func_forward_2(Connected, __belong(__type_list(_1, _2), Lines));
-        __func_forward_3(InSameLine, __belong(__type_list(_1, _2, _3), Lines));
+        __func_forward_2(Connected, __belong(__points(_1, _2), Lines));
+        __func_forward_3(InSameLine, __belong(__points(_1, _2, _3), Lines));
 
     public:
         using Result = __and( Connected<P1, P2>

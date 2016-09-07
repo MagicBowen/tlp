@@ -12,10 +12,10 @@ namespace triangle
     struct CountTriangles
     {
     private:
-        template<typename Acc, typename Triple>
+        template<typename Sum, typename Triple>
         struct Count
         {
-            using Result = __if(__is_triangle(Triple, Lines), __add(Acc, __int(1)), Acc);
+            using Result = __if(__is_triangle(Triple, Lines), __add(Sum, __int(1)), Sum);
         };
 
     public:

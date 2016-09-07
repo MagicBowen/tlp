@@ -9,7 +9,6 @@ namespace triangle
     __func_forward_1(Point, _1);
 }
 
-#define __p(N)  triangle::Point<__int(N)>
-#define __points(...) __type_list(__VA_ARGS__)
+#define __p(N)          triangle::Point<__int(N)>
 
 #endif
