@@ -24,7 +24,7 @@ FIXTURE(TestTriangle)
     TEST("count triangles")
     {
         using Points = __points( __p('a'), __p('b'), __p('c'), __p('d'), __p('e'), __p('f')
-                           , __p('g'), __p('h'), __p('i'), __p('j'), __p('k'));
+                               , __p('g'), __p('h'), __p('i'), __p('j'), __p('k'));
 
         using TriplePoints = __comb(Points, __int(3));
 
