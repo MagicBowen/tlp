@@ -10,14 +10,14 @@
 
 namespace triangle
 {
-    template<typename Triple, typename Lines> struct IsTriangle;
+    template<typename Triple, typename Figure> struct IsTriangle;
 
-    template<typename P1, typename P2, typename P3, typename Lines>
-    struct IsTriangle<__type_elem(P1, __type_elem(P2, __type_elem(P3, __null()))), Lines>
+    template<typename P1, typename P2, typename P3, typename Figure>
+    struct IsTriangle<__type_elem(P1, __type_elem(P2, __type_elem(P3, __null()))), Figure>
     {
     private:
-        __func_forward_2(Connected, __belong(__points(_1, _2), Lines));
-        __func_forward_3(InSameLine, __belong(__points(_1, _2, _3), Lines));
+        __func_forward_2(Connected, __belong(__points(_1, _2), Figure));
+        __func_forward_3(InSameLine, __belong(__points(_1, _2, _3), Figure));
 
     public:
         using Result = __and( Connected<P1, P2>
