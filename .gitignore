@@ -1,4 +1,4 @@
-build/*
+build*/*
 Debug/*
 .settings/*
 .cproject
