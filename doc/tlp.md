@@ -46,7 +46,8 @@ TLP库包含以下内容：
 - 进行编译期函数定义的各种辅助工具；
 - 一个面向模板元编程的测试框架，所有的测试用例执行在C\++的编译期，我们使用它来对TLP进行测试；
 
-除此之外，TLP库中还包含了三个演示如何在现实中使用TLP库进行模板元编程的示例代码，分别是：
+除此之外，TLP库中还包含了如下演示如何在现实中使用TLP库进行模板元编程的示例代码，分别是：
+
 - 示范了如何使用模板元编程做纯编译期计算，完成一个自动数三角形的程序；
 - 示范了如何使用模板元编程技术来实现代码生成，自动创建visitor设计模式；
 - 示范了如何使用模板元编程技术来实现一个DSL，用于描述并生成有限状态机；
@@ -55,17 +56,19 @@ TLP库包含以下内容：
 
 示例代码中利用模板元编程创建有限状态机DSL的例子来自于《C++模板元编程》一书，为了更好的展示其实现，我用TypeList对其进行了改写。
 
-最后，TLP库自身的测试通过一个原创的C\++模板元编程测试框架。该框架专门针对C\++编译期计算进行测试，它的用法和常见的xUnit测试框架类似，但有趣的是使用该框架所描述的所有测试用例的执行发生在C\++编译期。后面会专门介绍该框架的一些实现细节。
+除了上面的例子，本文还介绍了我自己开发的面向C\++模块或子系统级别的FT（Functional Test）测试框架[dates](https://github.com/MagicBowen/dates)，重点展示了它如何使用模板元编程来进行类型萃取、类型选择以及类型校验，最终使得框架变得更易用、更高效以及更安全。这些技巧可以帮助到大家更好地使用模板元编程去解决现实问题。
+
+最后，TLP库自身的测试通过一个原创的C\++模板元编程测试框架。该框架专门针对C\++编译期计算进行测试，它的用法和常见的xUnit测试框架类似，但有趣的是使用该框架所描述的所有测试用例的执行发生在C\++编译期。本文会专门介绍该框架的一些实现细节。
 
 C\++模板元编程当年被提出来的时候，函数式编程还没有像今天这样被更多的人所了解和接受，当时的C\++标准和编译器对模板和编译期计算的支持也非常有限。然而到了今天，很多事情发生了变化！本文的读者最好能够有一些函数式编程的基础，了解C\++模板的基本用法，熟悉一些C\++11标准的内容。当然文中所有用的到模板技术、C\++11标准和涉及到的函数式编程概念也都会专门介绍和说明。
 
-如果你从来没有接触过C\++模板元编程，那么最好从一开始就把它当做一门全新的语言去学习，从头掌握C\++中这种新的计算模型和语法。这种新的语言和我们熟识的运行期C\++的语法和计算模型有很大的差异，但它的优势在于能和运行期C\++紧密无缝地结合在一起，无论是在提高程序可扩展性还是提高程序运行效率上，都能创造出非常不可思议的效果来。希望通过这一系列文章，可以让更多的人掌握C\++模板元编程这一设计利器，在适合的场合下以更酷、更有效的方式去解决问题。
+如果你从来没有接触过C\++模板元编程，那么最好从一开始就把它当做一门全新的语言去学习，从头掌握C\++中这种不一样的计算模型和语法。这种新的语言和我们熟识的运行期C\++的语法和计算模型有很大的差异，但它的优势在于能和运行期C\++紧密无缝地结合在一起，无论是在提高程序可扩展性还是提高程序运行效率上，都能创造出非常不可思议的效果来。希望通过这篇文章，可以让更多的人掌握C\++模板元编程这一设计利器，在适合的场合下以更有效、更酷的方式去解决问题。
 
 > 本文中出现的代码片段，如果在注释中给出了TLP库中对应文件路径，则都是TLP库中的源码，其它的都是为了文章需要所构造的临时代码。另外，为了减少噪音，文中所示TLP库中的代码均没有加命名空间，阅读文章和TLP库源码时请注意区分。
 
 ## 模板的基本知识
 
-模板元编程中的主要技术工具就是模板。模板最开始作为一种更加安全的宏被引入C\++，用来解决代码在不同类型间复用的问题。后来随着标准的演进，模板被赋予的功能也越来越强大！
+模板元编程中的主要技术工具就是模板。模板最开始作为一种更加安全的宏被引入C\++，用来解决代码在不同类型间复用的问题。后来随着人们的使用，模板强大的编译期计算能力被挖掘了出来，同时伴随着标准的演进，模板被赋予的功能也越来越强大！
 
 下面我们以类模板举例，总结一下我们后面会用到的模板知识。
 
@@ -2442,7 +2445,7 @@ TEST("calculate the total size of the types that larger than 2 bytes")
 
 #### TypeList的应用
 
-使用TypeList可以一次对一组类型进行操纵，关于如何应用它是一个非常有想象力的事情。例如我们可以用TypeList轻易地实现一个traits工具，用于判断某一类型是否是C\++内置类型：
+使用TypeList可以一次对一组类型进行操纵，关于如何应用它是一个非常有想象力的事情。例如我们可以用TypeList轻易地实现一个trait工具，用于判断某一类型是否是C\++内置类型：
 
 ~~~cpp
 // "tlp/traits/IsBuiltIn.h"
@@ -2547,9 +2550,9 @@ object.visit(-5);
 
 ### Traits
 
-C\++标准库STL中的`type_traits`文件中，已经有了比较全面的C\++ traits组件，可以用来对代码做各种静态反射。
+C\++标准库STL中的`type_traits`文件中，已经有了比较全面的C\++ trait组件，可以用来对代码做各种静态反射。
 
-TLP库中补充了如下几个有用的traits工具，这些traits在后面介绍的TLP的sample代码中会用到。
+TLP库中补充了如下几个有用的trait工具，这些trait在后面介绍的TLP的sample代码中会用到。
 
 - `__is_convertible(T, U)`：用于判断类型T是否可以默认转型为U类型；
 
@@ -2565,7 +2568,7 @@ TLP库中补充了如下几个有用的traits工具，这些traits在后面介�
 
 - `__lambda_para(Lambda，Index)`：针对一个Lambda表达式类型，返回其Index位置的参数的类型。如果没有参数返回NullType；
 
-这些traits工具的实现大多在前面都已经介绍过，除过最后三个关于lambda的。
+这些trait工具的实现大多在前面都已经介绍过，除过最后三个关于lambda的。
 
 C\++11引入了lambda特性，这是一个非常有用的特性，尤其对于编写框架。现实中我们经常把变化的算法交给客户自定义，然后通过语言提供的技术手段再注入给框架。相比传统使用虚接口做注入，支持lambda会让客户的代码更加简洁和紧凑。在框架中，我们可能会要提取用户注入的lambda表达式的返回值类型或者参数类型。TLP中的`__lambda_return()`、`__lambda_paras()`和`__lambda_para()`就是帮助代码完成这些事情的。它们的实现如下：
 
@@ -2640,7 +2643,7 @@ TEST("calculate the return type and parameter types of a lambda")
 
 之所以还需要`run()`方法，是因为TEST本质上是一个类，而`auto f`不能是定义为类的成员的，但是可以定义到函数里面。
 
-关于TLP中的traits就介绍到这里，更多的关于traits的应用在后面的还会专门介绍。
+关于TLP中的trait就介绍到这里，更多的关于trait的应用在后面的还会专门介绍。
 
 ### Test
 
@@ -2902,7 +2905,7 @@ FIXTURE(TestTriangle)
 
 Dates是本人开发的一个针对C\++程序的模块和系统级别的FT（Functional Test）测试框架。它可以模拟被测系统的交互系统，让它们以同步或者异步的方式发消息给被测系统，然后再由模拟系统接收被测系统的返回消息并进行校验。用Dates描述测试用例，主要工作就是在框架中创建被测系统的周边交互系统，并且按照消息的时序关系描述测试用例，构造消息，并对接收到的消息内容进行断言校验。
 
-如下是一个用Dates描述的测试用例：
+如下是一个用Dates描述的测试用例。注意下面代码中的测试框架是传统运行期的C\++测试框架，不是之前介绍的编译期的TLP测试框架。
 
 ~~~cpp
 Fixture(TestAccess)
@@ -2941,7 +2944,7 @@ Fixture(TestAccess)
 
 #### 类型萃取
 
-类型萃取（traits）的概念我们前面有介绍过。可以将Traits看做是一种静态反射技术，通过traits我们可以自动提取出想要的代码元信息，避免让客户代码显示去提供这些信息，从而使得客户代码更加的简洁。
+类型萃取（trait）的概念我们前面有介绍过。可以将trait看做是一种静态反射技术，通过trait我们可以自动提取出想要的代码元信息，避免让客户代码显示去提供这些信息，从而使得客户代码更加的简洁。
 
 在dates中，客户可使用`FakeSystem`定义一个fake系统，与SUT交互。`FakeSystem`拥有`send`和`recv`接口，分别向SUT发送消息，以及从SUT接收消息。`send`的入参是一个原型为`void(Msg&)`的lambda函数，用于描述如何构造Msg消息。
 
@@ -2975,7 +2978,7 @@ void send(const BUILDER& builder)
 
 上面代码的问题在于，我们不知道Msg的类型！Msg的类型是由客户传入的不同builder决定的，例如`visitor.send([this](AccessReq& req){...})`中，Msg是`AccessReq`。换句话说，我们需要从传入的lambda表达式的类型中获取Msg的类型。
 
-模板元编程可以帮助我们解决这个问题。还记得我们前面介绍的TLP库中traits工具中的`__lambda_para()`吗？于是代码修改如下：
+模板元编程可以帮助我们解决这个问题。还记得我们前面介绍的TLP库中trait工具中的`__lambda_para()`吗？于是代码修改如下：
 
 ~~~cpp
 template<typename BUILDER> 
@@ -2990,7 +2993,7 @@ void send(const BUILDER& builder)
 
 如上我们通过类型萃取，从客户传入的函数类型中取出了参数的类型，使得框架的接口保持了简洁和灵活性。
 
-#### 类型抉择
+#### 类型选择
 
 上面我们在`send`的实现中创建了一个msg，它的内存是在函数栈空间上临时创建的。一般系统间发送的消息可能会比较大，我们知道为了避免栈溢出，函数内不宜直接定义内存占用过大的临时变量，所以我们实现了一个内存池，专门用于消息的内存分配和回收。
 
@@ -3099,7 +3102,129 @@ using MsgAllocator = __if(__bool(sizeof(Msg) < BigSize), StackAllocator<Msg>, Po
 
 #### 类型校验
 
+一般情况下一个系统可以发送和接收的消息是确定的。例如前面的例子中，visitor可以发送`AccessReq`消息，可以接收`AccessRsp`消息，然而客户在描述测试用例时却可以传递非法的lambda给visitor。
 
+例如：
+
+~~~cpp
+TEST(...)
+{
+    visitor.send([this](CfgReq& req)
+            {
+                req.capability = CAPABILITY;
+            });
+
+	//...
+}
+~~~
+
+此时，visitor将会构造错误的消息发送给SUT，这可能会引起测试失败，也可能不会。但无论如何，这种错误都会引起运行期发生一些异常。某些时候我们希望能够把这种错误的发现提前到编译期，一旦客户传递了某一FakeSystem不支持的消息类型，就直接编译失败。同时我们还想让用户保留不进行类型校验的权利，这样可以允许用户可以构造一些错误类型消息以触发异常流程的测试。
+
+`FakeSystem`既可以选择校验消息类型，也可以选择不校验，而且这种权利在客户手里，于是我们采用基于policy的设计。对于模板所谓基于policy的设计，就是将类的变化部分分离出去，交给一个模板参数，然后再将其组合进来。而用户就可以通过改变模板参数来定制目标类型的可变化部分了。
+
+如下，我们首先定义一个`FakeSystemBase`，它和`FakeSystem`代码基本一样，只是它将如何进行消息检测的规则通过模板参数`MsgChecker`注入进来，并调用`MsgChecker`对消息类型进行静态校验。
+
+~~~cpp
+template<typename MsgChecker>
+struct FakeSystemBase
+{
+    template<typename BUILDER> 
+    void send(const BUILDER& builder)
+    {
+        using Msg = __lambda_para(BUILDER, 0);
+        ASSERT_TRUE(typename MsgChecker::template IsValidForSend<Msg>);
+
+        MsgAllocator<Msg> allocator;
+        auto msg = allocator.alloc();
+
+        builder(*msg);
+        // ...
+    }
+
+    template<typename Checker>
+    void recv(const Checker& checker)
+    {
+    	using Msg = __lambda_para(Checker, 0);
+        ASSERT_TRUE(typename MsgChecker::template IsValidForRecv<Msg>);
+
+        // ...
+    }
+};
+~~~
+
+`MsgChecker`的内部应该定义两个模板`IsValidForSend<Msg>`和`IsValidForRecv<Msg>`，分别对用户定义的发送和接收的消息类型进行合法性校验。上面的`ASSERT_TRUE(typename MsgChecker::template IsValidForSend<Msg>)`中调用了TLP测试框架中的断言`ASSERT_TRUE`，它的本质上是静态断言，当判断类型不符就会编译失败。
+
+接下来我们首先来实现一个`MsgChecker`，在任何情况下都返回真，以便实现不用校验的`FakeSystem`。
+
+~~~cpp
+struct OmmitMsgChecker
+{
+    template<typename Msg>
+    using IsValidForSend = __true();
+
+    template<typename Msg>
+    using IsValidForRecv = __true();
+};
+~~~
+
+有了它，原来的`FakeSystem`的定义修改如下。我们消除了重复代码，并且保证了`FakeSystem`原有的使用习惯不变。
+
+~~~cpp
+struct FakeSystem : FakeSystemBase<OmmitMsgChecker>
+{
+};
+~~~
+
+接来下我们定义对消息严格校验的`StrictFakeSystem`。如下，它需要将发送和接收的合法消息列表当做模板参数传入，以供类型校验使用。
+
+~~~cpp
+struct OmmitVerify;
+
+template< typename ValidSendMsgs = OmmitVerify
+        , typename ValidRecvMsgs = OmmitVerify>
+struct StrictFakeSystem : FakeSystemBase<StrictFakeSystem<ValidSendMsgs, ValidRecvMsgs>>
+{
+    template<typename Msg>
+    using IsValidForSend = __if(__is_eq(ValidSendMsgs, OmmitVerify), __true(), __is_included(ValidSendMsgs, Msg));
+
+    template<typename Msg>
+    using IsValidForRecv = __if(__is_eq(ValidRecvMsgs, OmmitVerify), __true(), __is_included(ValidRecvMsgs, Msg));
+};
+~~~
+
+`StrictFakeSystem`使用时需要传入模板参数`ValidSendMsgs`和`ValidRecvMsgs`，它们是两个TypeList，分别代表合法的发送消息类型列表和接收消息类型列表。它们还具有默认参数`OmmitVerify`，一旦使用默认参数，则代表放弃对发送或者接收消息的校验能力。`StrictFakeSystem`的实现采用之前介绍过的`CRTP(Curiously Recurring Template Pattern)`模式。
+
+现在客户可以选择将需要的FakeSystem定义成一个需要严格判断消息类型的了，例如：
+
+~~~cpp
+using FakeVisitor = StrictFakeSystem<__type_list(AccessReq, CapabilityUpdate), __type_list(AccessRsp, UpdateRsp)>;
+
+FakeVisitor visitor;
+~~~
+
+上述客户声明`FakeVisitor`仅支持发送`AccessReq`和`CapabilityUpdate`消息，仅支持接收`AccessRsp`和`UpdateRsp`消息。一旦用户传入的lambda表达式有误，就会出现编译错误，如：`visitor.send([](CfgReq& req){...})`将会触发由静态断言失败引起的编译错误。
+
+最后有了`StrictFakeSystem`，原有的`FakeSystem`的定义也可以修改为：
+
+~~~cpp
+struct FakeSystem : StrictFakeSystem<>
+{
+};
+~~~
+
+至此，我们保留了原有`FakeSystem`的用法，同时又让用户可以定义严格校验发送和接收的消息类型的fake系统，从而让框架变得更灵活和安全。
+
+关于模板元编程在dates中的应用就介绍到这里。我们通过实际的例子列举了模板元编程在现实代码中的常用场景和使用技巧：
+
+- 对trait的合理应用，可以让代码更加灵活，让用户代码更加简洁；
+
+- 基于policy的设计技巧，可以让用户自定义目标类型的变化部分，可以让代码更易于被复用和组合；
+
+- 通过类型抉择选择合适的算法类，让代码面对不同场景自动选择最佳的处理方式，同时这种选择又是对客户透明的；
+
+- 通过类型校验，让错误尽早发生，让代码更加的安全和健壮；
+
+接下来，我们将介绍模板元编程在实际代码中更高阶的用法，用于做代码生成和创建DSL语言。
 
 ### 代码生成
 
