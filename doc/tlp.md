@@ -2955,7 +2955,8 @@ visitor.send([this](AccessReq& req)
 由于一个`FakeSystem`可以发送多种msg，所以`send`接口无法确定lambda的具体类型，因此`send`只能定义泛型参数，它的原型为：
 
 ~~~cpp
-template<typename BUILDER> void send(const BUILDER& builder)；
+template<typename BUILDER>
+void send(const BUILDER& builder)；
 ~~~
 
 这样`send`就可以传入各种构造不同消息类型的lambda了，而且还可以调用原型一致的普通函数或者仿函数，客户使用起来非常简洁。
@@ -2963,7 +2964,8 @@ template<typename BUILDER> void send(const BUILDER& builder)；
 现在我们来实现`send`。`send`中需要创建一个消息，然后交给builder去构造。如下伪代码：
 
 ~~~cpp
-template<typename BUILDER> void send(const BUILDER& builder)
+template<typename BUILDER>
+void send(const BUILDER& builder)
 {
 	Msg msg; // 这里Msg到底应该是什么类型？
     builder(msg);
@@ -2971,12 +2973,13 @@ template<typename BUILDER> void send(const BUILDER& builder)
 }
 ~~~
 
-上面代码的问题在于，我们不知道Msg的类型！Msg的类型是由客户传入的不同builder决定的，例如`visitor.send([this](AccessReq& req){...})`中，Msg是`AccessReq`。换句话说，我们需要从传入的lambda表达式的类型中萃取出Msg的类型。
+上面代码的问题在于，我们不知道Msg的类型！Msg的类型是由客户传入的不同builder决定的，例如`visitor.send([this](AccessReq& req){...})`中，Msg是`AccessReq`。换句话说，我们需要从传入的lambda表达式的类型中获取Msg的类型。
 
 模板元编程可以帮助我们解决这个问题。还记得我们前面介绍的TLP库中traits工具中的`__lambda_para()`吗？于是代码修改如下：
 
 ~~~cpp
-template<typename BUILDER> void send(const BUILDER& builder)
+template<typename BUILDER> 
+void send(const BUILDER& builder)
 {
 	using Msg = __lambda_para(BUILDER, 0); // 获取BUILDER的参数列表中的第一个参数类型
     Msg msg;
@@ -2987,15 +2990,115 @@ template<typename BUILDER> void send(const BUILDER& builder)
 
 如上我们通过类型萃取，从客户传入的函数类型中取出了参数的类型，使得框架的接口保持了简洁和灵活性。
 
-#### 类型分派
+#### 类型抉择
 
-上面我们在`send`的实现中创建了一个msg，它的内存是在函数栈空间上临时创建的。一般系统间发送的消息往往比较大，我们知道为了避免栈溢出，函数内不宜直接定义内存占用过大的临时变量，所以我们实现了一个内存池，专门用于消息的内存分配：
+上面我们在`send`的实现中创建了一个msg，它的内存是在函数栈空间上临时创建的。一般系统间发送的消息可能会比较大，我们知道为了避免栈溢出，函数内不宜直接定义内存占用过大的临时变量，所以我们实现了一个内存池，专门用于消息的内存分配和回收。
 
 ~~~cpp
-Msg* msg = MsgAllocator::Alloc(sizeof(Msg));
+auto* msg = PoolAllocator::alloc<BigMsg>();
+build(*msg);
+// ...
+PoolAllocator::free(msg);
+~~~
+
+`PoolAllocator`中有一个全局的内存池，它根据接收的`Msg`的类型，计算得到需要的内存块大小，在内存池中找到合适的内存并以`Msg*`的类型返回，因此接收内存的指针在定义时可以使用`auto`关键字。`PoolAllocator`中`alloc`和`free`函数的原型如下：
+
+~~~cpp
+struct PoolAllocator
+{
+    template<typename Msg> static Msg* alloc()；
+
+    static void free(void* msg)；
+};
+~~~
+
+使用内存池解决了上述问题，但也是有代价的！内存池分配的时候需要在一堆内存块中查找合适的内存块，无论如何是没有在栈上直接分配效率高的。如果系统中还存在大量的小消息，统一使用内存池分配就显得非常不高效了！
+
+由于dates是框架，它实现时不能预知客户发送的消息大小情况，所以我们必须有一种机制来让代码根据客户使用的消息大小自动决定在哪里分配内存。
+
+现在我们先实现一种可以在栈上分配内存的分配器：
+
+~~~cpp
+template<typename Msg>
+struct StackAllocator
+{
+    Msg* alloc()
+    {
+        return &msg;
+    }
+
+private:
+    Msg msg;
+};
+~~~
+
+`StackAllocator`需要如下使用：
+
+~~~cpp
+StackAllocator<BigMsg> allocator;
+auto* msg = allocator.alloc();
+build(*msg);
+~~~
+
+现在我们就可以根据Msg的大小来做类型选择，如果消息大则用`PoolAllocator`，否则用`StackAllocator`。在做此事之前还遗留一个问题，那就是`StackAllocator`的使用需要生成对象，而`PoolAllocator`不用。而且`StackAllocator`申请的内存会随着函数退出自动释放，而`PoolAllocator`申请的内存必须手动释放。对于此问题，我们再增加一个中间层，用于统一两者的使用方式。
+
+~~~cpp
+template<typename Msg>
+struct PoolAllocatorWrapper
+{
+    Msg* alloc()
+    {
+    	msg = PoolAllocator::alloc<Msg>();
+        return msg;
+    }
+
+    ~PoolAllocatorWrapper()
+    {
+        PoolAllocator::free(msg);
+        msg = nullptr;
+    }
+
+private：
+    Msg* msg{nullptr}；
+};
+~~~
+
+`PoolAllocatorWrapper`对`PoolAllocator`进行了封装，并且使用了RAII(Resource Acquisition Is Initialization)技术，在对象析构时自动释放内存。如此它的用法就和`StackAllocator`一致了。
+
+现在如果我们认为小于1024字节的算小消息，则我们定义`MsgAllocator`来根据消息大小进行分配器类型选择：
+
+~~~cpp
+template<typename Msg>
+using MsgAllocator = __if(__bool(sizeof(Msg) < 1024), StackAllocator<Msg>, PoolAllocatorWrapper<Msg>);
+~~~
+
+现在dates中`FakeSystem`的`send`接口的实现可以修改如下了：
+
+~~~cpp
+template<typename BUILDER> 
+void send(const BUILDER& builder)
+{
+	using Msg = __lambda_para(BUILDER, 0);
+
+    MsgAllocator<Msg> allocator;
+    auto msg = allocator.alloc();
+
+    builder(*msg);
+    // ...
+}
+~~~
+
+由于我们的`StackAllocator`和`PoolAllocatorWrapper`都定义在头文件中，而且成员函数都很短小，所以编译器基本都会将其内联进来，因此这里没有任何的额外开销。一切都很酷，不是吗？！！！！
+
+对于`MsgAllocator`，我们还可以让它更通用，将判断消息大小的值也作为模板参数：
+
+~~~cpp
+template<typename Msg, int BigSize = 1024>
+using MsgAllocator = __if(__bool(sizeof(Msg) < BigSize), StackAllocator<Msg>, PoolAllocatorWrapper<Msg>);
 ~~~
 
 #### 类型校验
+
 
 
 ### 代码生成
