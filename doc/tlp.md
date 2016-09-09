@@ -1389,7 +1389,7 @@ ASSERT_FALSE(__or(__true(), __false()));
 // "tlp/test/details/Asserter.h"
 
 #define ASSERT_TRUE(T)                  \
-static_assert(__value(T), "TLP Error: expect "#T" be true, but be false!")
+static_assert(__value(T), "Assert Failed: expect "#T" be true, but be false!")
 ~~~
 
 同样我们实现`ASSERT_FALSE`如下：
@@ -1398,7 +1398,7 @@ static_assert(__value(T), "TLP Error: expect "#T" be true, but be false!")
 // "tlp/test/details/Asserter.h"
 
 #define ASSERT_FALSE(T)                 \
-static_assert(!(__value(T)), "TLP Error: expect "#T" be false, but be true!")
+static_assert(!(__value(T)), "Assert Failed: expect "#T" be false, but be true!")
 ~~~
 
 接下来我们实现用于断言两个类型是否相等的`ASSERT_EQ()`和`ASSERT_NE()`：
@@ -1407,10 +1407,10 @@ static_assert(!(__value(T)), "TLP Error: expect "#T" be false, but be true!")
 // "tlp/test/details/Asserter.h"
 
 #define ASSERT_EQ(T, Expected)          \
-static_assert(__value(__is_eq(T, Expected)), "TLP Error: expect "#T" be equal to "#Expected"!")
+static_assert(__value(__is_eq(T, Expected)), "Assert Failed: expect "#T" be equal to "#Expected"!")
 
 #define ASSERT_NE(T, Expected)          \
-static_assert(!(__value(__is_eq(T, Expected))), "TLP Error: expect "#T" be not equal to "#Expected"!")
+static_assert(!(__value(__is_eq(T, Expected))), "Assert Failed: expect "#T" be not equal to "#Expected"!")
 ~~~
 
 它们的用法如下：
@@ -1458,10 +1458,10 @@ struct Valid<NullType>
 // "tlp/test/details/Asserter.h"
 
 #define ASSERT_VALID(T)                 \
-static_assert(__value(__valid(T)), "TLP Error: expect "#T" be valid, but be invalid!")
+static_assert(__value(__valid(T)), "Assert Failed: expect "#T" be valid, but be invalid!")
 
 #define ASSERT_INVALID(T)               \
-static_assert(!(__value(__valid(T))), "TLP Error: expect "#T" be invalid, but be valid!")
+static_assert(!(__value(__valid(T))), "Assert Failed: expect "#T" be invalid, but be valid!")
 ~~~
 
 ### Test
@@ -2909,25 +2909,25 @@ Fixture(TestAccess)
 {
 	FakeSystem visitor;
     FakeSystem commander;
-    
+
     TEST(”shoud response success to visitor when commander response ok“)
     {
-        visitor.send([this](FAKE(AccessReq)& req)
+        visitor.send([this](AccessReq& req)
                 {
                     req.capability = CAPABILITY;
                 });
 
-        commander.recv([this](const FAKE(CfgReq)& cfg)
+        commander.recv([this](const CfgReq& cfg)
                 {
                     ASSERT_EQ(CAPABILITY, cfg.capability);
                 });
 
-        commander.send([](FAKE(CfgRsp)& rsp)
+        commander.send([](CfgRsp& rsp)
                 {
                     rsp.result = OK;
                 });
 
-        visitor.recv([](const FAKE(AccessRsp)& rsp)
+        visitor.recv([](const AccessRsp& rsp)
                 {
                     ASSERT_EQ(SUCCESS, rsp.result);
                 });
@@ -2937,19 +2937,66 @@ Fixture(TestAccess)
 
 该用例中模拟了与被测系统SUT(System Under Test)交互的两个周边系统visitor和commander。通过测试用例我们可以看到，SUT一旦收到从visitor发来的AccessReq消息，就需要给commander发一条CfgReq消息，CfgReq消息中需要携带AccessReq中的capability字段值给commander。一旦commander返回OK，则SUT需要给visitor发送AccessRsp消息，其中的result值为SUCCESS。
 
-关于dates的具体实现细节，感兴趣的话可以下载dates的源码：[https://github.com/MagicBowen/dates](https://github.com/MagicBowen/dates)。本文只列举三处dates使用模板元编程的来做类型操纵，最终使得dates变得更加易用、高效和安全。
+关于dates的具体实现细节，感兴趣的话可以下载dates的源码：[https://github.com/MagicBowen/dates](https://github.com/MagicBowen/dates)。本文只介绍几处dates如何使用模板元编程来做类型操纵，最终使得dates变得更加易用、高效和安全。
 
-#### 易用
+#### 类型萃取
 
-#### 高效
+类型萃取（traits）的概念我们前面有介绍过。可以将Traits看做是一种静态反射技术，通过traits我们可以自动提取出想要的代码元信息，避免让客户代码显示去提供这些信息，从而使得客户代码更加的简洁。
 
-#### 安全
+在dates中，客户可使用`FakeSystem`定义一个fake系统，与SUT交互。`FakeSystem`拥有`send`和`recv`接口，分别向SUT发送消息，以及从SUT接收消息。`send`的入参是一个原型为`void(Msg&)`的lambda函数，用于描述如何构造Msg消息。
 
-traits
+~~~cpp
+visitor.send([this](AccessReq& req)
+        {
+            req.capability = CAPABILITY;
+        });
+~~~
 
-类型分派：内存分配自动分派
+由于一个`FakeSystem`可以发送多种msg，所以`send`接口无法确定lambda的具体类型，因此`send`只能定义泛型参数，它的原型为：
 
-类型判断
+~~~cpp
+template<typename BUILDER> void send(const BUILDER& builder)；
+~~~
+
+这样`send`就可以传入各种构造不同消息类型的lambda了，而且还可以调用原型一致的普通函数或者仿函数，客户使用起来非常简洁。
+
+现在我们来实现`send`。`send`中需要创建一个消息，然后交给builder去构造。如下伪代码：
+
+~~~cpp
+template<typename BUILDER> void send(const BUILDER& builder)
+{
+	Msg msg; // 这里Msg到底应该是什么类型？
+    builder(msg);
+    // ...
+}
+~~~
+
+上面代码的问题在于，我们不知道Msg的类型！Msg的类型是由客户传入的不同builder决定的，例如`visitor.send([this](AccessReq& req){...})`中，Msg是`AccessReq`。换句话说，我们需要从传入的lambda表达式的类型中萃取出Msg的类型。
+
+模板元编程可以帮助我们解决这个问题。还记得我们前面介绍的TLP库中traits工具中的`__lambda_para()`吗？于是代码修改如下：
+
+~~~cpp
+template<typename BUILDER> void send(const BUILDER& builder)
+{
+	using Msg = __lambda_para(BUILDER, 0); // 获取BUILDER的参数列表中的第一个参数类型
+    Msg msg;
+    builder(msg);
+    // ...
+}
+~~~
+
+如上我们通过类型萃取，从客户传入的函数类型中取出了参数的类型，使得框架的接口保持了简洁和灵活性。
+
+#### 类型分派
+
+上面我们在`send`的实现中创建了一个msg，它的内存是在函数栈空间上临时创建的。一般系统间发送的消息往往比较大，我们知道为了避免栈溢出，函数内不宜直接定义内存占用过大的临时变量，所以我们实现了一个内存池，专门用于消息的内存分配：
+
+~~~cpp
+Msg* msg = MsgAllocator::Alloc(sizeof(Msg));
+~~~
+
+#### 类型校验
+
 
 ### 代码生成
 

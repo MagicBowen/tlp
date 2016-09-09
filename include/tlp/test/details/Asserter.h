@@ -6,21 +6,21 @@
 #include <tlp/bool/algo/IsEqual.h>
 
 #define ASSERT_TRUE(T)                  \
-static_assert(__value(T), "TLP Error: expect "#T" be true, but be false!")
+static_assert(__value(T), "Assert Failed: expect "#T" be true, but be false!")
 
 #define ASSERT_FALSE(T)                 \
-static_assert(!(__value(T)), "TLP Error: expect "#T" be false, but be true!")
+static_assert(!(__value(T)), "Assert Failed: expect "#T" be false, but be true!")
 
 #define ASSERT_VALID(T)                 \
-static_assert(__value(__valid(T)), "TLP Error: expect "#T" be valid, but be invalid!")
+static_assert(__value(__valid(T)), "Assert Failed: expect "#T" be valid, but be invalid!")
 
 #define ASSERT_INVALID(T)               \
-static_assert(!(__value(__valid(T))), "TLP Error: expect "#T" be invalid, but be valid!")
+static_assert(!(__value(__valid(T))), "Assert Failed: expect "#T" be invalid, but be valid!")
 
 #define ASSERT_EQ(T, Expected)          \
-static_assert(__value(__is_eq(T, Expected)), "TLP Error: expect "#T" be equal to "#Expected"!")
+static_assert(__value(__is_eq(T, Expected)), "Assert Failed: expect "#T" be equal to "#Expected"!")
 
 #define ASSERT_NE(T, Expected)          \
-static_assert(!(__value(__is_eq(T, Expected))), "TLP Error: expect "#T" be not equal to "#Expected"!")
+static_assert(!(__value(__is_eq(T, Expected))), "Assert Failed: expect "#T" be not equal to "#Expected"!")
 
 #endif
