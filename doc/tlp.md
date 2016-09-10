@@ -3118,7 +3118,7 @@ TEST(...)
 }
 ~~~
 
-此时，visitor将会构造错误的消息发送给SUT，这可能会引起测试失败，也可能不会。但无论如何，这种错误都会引起运行期发生一些异常。某些时候我们希望能够把这种错误的发现提前到编译期，一旦客户传递了某一FakeSystem不支持的消息类型，就直接编译失败。同时我们还想让用户保留不进行类型校验的权利，这样可以允许用户可以构造一些错误类型消息以触发异常流程的测试。
+此时，visitor将会构造错误的消息发送给SUT，这可能会引起测试失败，也可能不会。但无论如何，这种错误都会引起运行期发生一些异常。作为一个测试框架，我们希望能够让用户抉择是否把这种错误的发现提前到编译期，一旦不小心传递了某一FakeSystem不支持的消息类型，就直接编译失败。同时用户也可能想保留不进行类型校验的权利，这样就允许用户刻意构造一些错误类型消息以触发异常流程的测试。
 
 `FakeSystem`既可以选择校验消息类型，也可以选择不校验，而且这种权利在客户手里，于是我们采用基于policy的设计。对于模板所谓基于policy的设计，就是将类的变化部分分离出去，交给一个模板参数，然后再将其组合进来。而用户就可以通过改变模板参数来定制目标类型的可变化部分了。
 
@@ -3152,7 +3152,7 @@ struct FakeSystemBase
 };
 ~~~
 
-`MsgChecker`的内部应该定义两个模板`IsValidForSend<Msg>`和`IsValidForRecv<Msg>`，分别对用户定义的发送和接收的消息类型进行合法性校验。上面的`ASSERT_TRUE(typename MsgChecker::template IsValidForSend<Msg>)`中调用了TLP测试框架中的断言`ASSERT_TRUE`，它的本质上是静态断言，当判断类型不符就会编译失败。
+如上代码约束`MsgChecker`的内部必须定义两个模板`IsValidForSend<Msg>`和`IsValidForRecv<Msg>`，分别对用户传入的发送和接收的消息类型进行合法性校验。上面的`ASSERT_TRUE(typename MsgChecker::template IsValidForSend<Msg>)`中调用了TLP测试框架中的断言`ASSERT_TRUE`，它是静态断言，当判断类型不符就会编译失败。
 
 接下来我们首先来实现一个`MsgChecker`，在任何情况下都返回真，以便实现不用校验的`FakeSystem`。
 
@@ -3202,7 +3202,7 @@ using FakeVisitor = StrictFakeSystem<__type_list(AccessReq, CapabilityUpdate), _
 FakeVisitor visitor;
 ~~~
 
-上述客户声明`FakeVisitor`仅支持发送`AccessReq`和`CapabilityUpdate`消息，仅支持接收`AccessRsp`和`UpdateRsp`消息。一旦用户传入的lambda表达式有误，就会出现编译错误，如：`visitor.send([](CfgReq& req){...})`将会触发由静态断言失败引起的编译错误。
+上述客户声明`FakeVisitor`仅支持发送`AccessReq`和`CapabilityUpdate`消息，仅支持接收`AccessRsp`和`UpdateRsp`消息。一旦用户传入的lambda表达式中的消息类型不符，就会出现编译错误，如：`visitor.send([](CfgReq& req){...})`将会触发由静态断言失败引起的编译错误。
 
 最后有了`StrictFakeSystem`，原有的`FakeSystem`的定义也可以修改为：
 
@@ -3224,7 +3224,7 @@ struct FakeSystem : StrictFakeSystem<>
 
 - 通过类型校验，让错误尽早发生，让代码更加的安全和健壮；
 
-接下来，我们将介绍模板元编程在实际代码中更高阶的用法，用于做代码生成和创建DSL语言。
+接下来，我们将介绍模板元编程更高阶的用法，用于做代码生成和创建DSL语言。
 
 ### 代码生成
 
