@@ -1,61 +1,91 @@
 #include <VisitorDef.h>
 #include <iostream>
+#include <memory>
 
 namespace
 {
-    struct DocElem;
-    struct Paragraph;
-    struct Picture;
+    struct Animal;
+    struct Cat;
+    struct Dog;
+    struct Mouse;
 
-    using MyVisitor = visitor::VisitorGenerator<void, __type_list(DocElem, Paragraph, Picture)>;
+    using AnimalVisitor = visitor::VisitorGenerator<void, __type_list(Cat, Dog, Mouse)>;
 
-    struct DocElem
+    struct Animal
     {
-        virtual void accept(MyVisitor&) = 0;
-        virtual ~DocElem() {}
+        virtual void accept(AnimalVisitor&) = 0;
+        virtual ~Animal() {}
     };
 
-    struct Paragraph : DocElem
+    struct Cat : Animal
     {
     private:
-        DEFINE_VISITABLE(MyVisitor);
+        DEFINE_VISITABLE(AnimalVisitor);
     };
 
-    struct Picture : DocElem
+    struct Dog : Animal
     {
     private:
-        DEFINE_VISITABLE(MyVisitor);
+        DEFINE_VISITABLE(AnimalVisitor);
     };
 
-    struct ConcreteVisitor : MyVisitor
+    struct Mouse : Animal
     {
     private:
-        void doVisit(DocElem&) override
+        DEFINE_VISITABLE(AnimalVisitor);
+    };
+
+    struct RunVisitor : AnimalVisitor
+    {
+    private:
+        void doVisit(Cat&) override
         {
-            std::cout << "DocElem" << std::endl;
+            std::cout << "Cat is running!" << std::endl;
         }
 
-        void doVisit(Paragraph&) override
+        void doVisit(Dog&) override
         {
-            std::cout << "Paragraph" << std::endl;
+            std::cout << "Dog is running" << std::endl;
         }
 
-        void doVisit(Picture&) override
+        void doVisit(Mouse&) override
         {
-            std::cout << "Picture" << std::endl;
+            std::cout << "Mouse is running" << std::endl;
+        }
+    };
+
+    struct CryVisitor : AnimalVisitor
+    {
+    private:
+        void doVisit(Cat&) override
+        {
+            std::cout << "Cat is crying!" << std::endl;
+        }
+
+        void doVisit(Dog&) override
+        {
+            std::cout << "Dog is crying" << std::endl;
+        }
+
+        void doVisit(Mouse&) override
+        {
+            std::cout << "Mouse is crying" << std::endl;
         }
     };
 };
 
 int main()
 {
-    ConcreteVisitor visitor;
+    RunVisitor run;
+    CryVisitor cry;
 
-    Picture picture;
-    static_cast<DocElem&>(picture).accept(visitor);
+    Animal* animals[] = {new Cat, new Dog, new Mouse};
 
-    Paragraph para;
-    static_cast<DocElem&>(para).accept(visitor);
+    animals[0]->accept(cry);
+    animals[1]->accept(cry);
+    animals[2]->accept(run);
+
+    for(auto animal : animals) delete animal;
 
     return 0;
 }
