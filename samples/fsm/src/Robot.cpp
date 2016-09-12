@@ -4,7 +4,7 @@
 // It can receive 4 events : { close,   open,    play,   stop }
 // It can do 4 actions :     { sayReady,  sayClosed,  doDance,  sayStoped}
 
-// The following is the details of the robot acting!
+// The following table describes how the robot acting in detail!
 
 /*******************************************************************/
 /*  Current State |   Event    |    Next State     |   Action      */
