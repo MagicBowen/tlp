@@ -1371,11 +1371,19 @@ C\++17标准有可能会引入concept特性用来支持上述haskell中对类型
 
 答案很明确，虽然模板为运行时C\++提供了鸭子类型的能力，但模板元编程自身却不支持鸭子类型。
 
-比如 `template<int Value> struct IntType{...}`元函数明确要求其入参为`int`类型变量，所以你可以这样使用`IntType<5>`。但是一旦你传入一个类型给它`IntType<int>`，它就会报错。
+例如下面的元函数明确要求其入参的型别为类型，所以你可以这样使用`SizeOf<int>`。但是一旦你传入一个数值`SizeOf<5>`，它就会报错。
+
+~~~cpp
+template<typename T>
+struct SizeOf
+{
+	using Result = __int(sizeof(T));
+}；
+~~~
 
 我们之前总结过，模板可以操作的计算对象大体可以分为数值和类型两大类，一旦我们把模板当做编译期函数来看，就会发现它是强类型的。一个模板声明其入参是数值型，就不能接收类型作为入参，反之亦然！这就是为何我们为了提高元函数的组合复用能力，将所有的数值也封装成了类型。我们统一模板元编程的计算对象类型，就相当于把一切都变成了鸭子，间接地也得到了鸭子类型的好处。
 
-最后，我们单独看待模板元编程的时候，它相当是一门解释型语言！C\++编译器直接面对模板元编程的源代码进行编译期计算，这时我们可以将C\++编译器看做是模板元编程的解释器，它一边解释一边执行，解释结束之时也是程序执行完毕之时。有趣吧？模板元编程的执行竟然如此类似一门脚本语言。
+最后，我们单独看待模板元编程的时候，它相当是一门解释型语言！C\++编译器直接面对模板元编程的源代码进行编译期计算，这时我们可以将C\++编译器看做是模板元编程的解释器，它一边解释一边执行，解释结束之时也是程序执行完毕之时。有趣吧？在这个角度看模板元编程反而更像是一门脚本语言。
 
 ### 总结：两阶段的C\++语言
 
@@ -2940,7 +2948,7 @@ FIXTURE(TestTriangle)
 }
 ~~~
 
-使用模板元编程做计算的介绍就到这里。受限于C\++编译器对模板递归层数的限制以及模板的编译速度，纯粹采用元编程来解决问题是比较少见的。模板元编程大多数场合是为运行期C\++做服务，一起结合来发挥C\++语言的强大威力，后面我们将看到这方面的例子。
+使用模板元编程做计算的介绍就到这里。受限于模板元编程IO能力的缺失，以及C\++编译器对模板递归层数的限制以及模板的编译速度，纯粹采用元编程来解决问题是比较少见的。模板元编程大多数场合是为运行期C\++做服务，一起结合来发挥C\++语言的强大威力，后面我们将看到这方面的例子。
 
 ### 类型操纵
 
@@ -3271,7 +3279,185 @@ struct FakeSystem : StrictFakeSystem<>
 
 ### 代码生成
 
+假如我们有一组继承体系：
 
+![](./pics/visitor-ori.png)
+
+当我们需要增加一个新的动物mouse，只用新建一个`Mouse`类，让它继承自公共父类`Animal`然后覆写`run`方法即可，不会干扰到别的实现。我们得到了开放封闭原则的好处！
+
+但是假如我们想要为其增加一个`void cry()`虚接口呢？这时我们就要打开每个类的文件，为其增加这个方法在不同类中的实现。这时我们发现了“散弹式修改”的坏味道。我们希望每次变化来临时，所有的修改都能集中在一起。
+
+没有绝对的开放封闭，只有面临具体变化的开放封闭。如上的继承体系面对动物种类变更时保持了开放封闭，而面临新的虚接口变更时，却要大范围修改。假如我们的继承体系很稳定，子类的种类发生变化的可能性很低，但是虚接口的变化可能性却很大，那么如何设计才能继续保持开放封闭性？
+
+我们手上有一个不需要的优势：方便地添加新的子类；同时也拥有一个令人烦恼的缺点：难以添加新的虚函数。这正是Visitor设计模式用武之地，它将所有的虚接口放在一起重新组织出了一个继承体系，然后采用双向派发的技术让两个继承体系组合在一起使用。它将原有继承体系增加虚接口的行为变成了为一个新的继承体系增加一个类型。Visitor以我们“不需要的优势”换取我们“需要的优势”，使用Visitor可以让我们方便地为原有继承体系增加新的虚函数，但同时也造成原有继承体系难以添加新的子类。
+
+上例使用Visitor设计模式修改后，类的关系如下：
+
+![](./pics/visitor-pattern.png)
+
+对应的代码如下：
+
+~~~cpp
+struct AnimalVisitor
+{
+	virtual void visit(Cat&) = 0;
+    virtual void visit(Dog&) = 0;
+    virtual ~AnimalVisitor(){}
+};
+
+struct RunVisitor : AnimalVisitor
+{
+private:
+	void visit(Cat& cat) override
+    {
+		// implement how cat run here;
+    }
+
+    void visit(Dog& dog) override
+    {
+		// implement how dog run here;
+    }
+};
+
+struct CryVisitor : AnimalVisitor
+{
+private:
+	void visit(Cat& cat) override
+    {
+		// implement how cat cry here;
+    }
+
+    void visit(Dog& dog) override
+    {
+		// implement how dog cry here;
+    }
+};
+~~~
+
+~~~cpp
+struct Animal
+{
+	virtual void accept(AnimalVisitor&) = 0;
+    virtual ~Animal(){}
+};
+
+struct Cat : Animal
+{
+private:
+	void accept(AnimalVisitor& visitor) override
+    {
+    	visitor.visit(*this);
+    }
+};
+
+struct Dog : Animal
+{
+private:
+	void accept(AnimalVisitor& visitor) override
+    {
+    	visitor.visit(*this);
+    }
+};
+~~~
+
+可以看到，使用了Visitor设计模式后，每当为Animal继承体系增加一个新的虚函数，只用在AnimalVisitor继承体系中增加一个新的子类即可。但如果要为Animal增加子类，那么AnimalVisitor继承体系中的所有类就都得变化。如前面所说，我们假设Animal的继承体系是稳定的，所以我们才借助Visitor设计模式帮我们以“不需要的优势”换取了我们“需要的优势”，从而让代码面对假设的变化趋势保持了开放封闭性。
+
+在AnimalVisitor中我们使用了函数重载，通过传入visit函数的类型来区分调用的具体接口。所以即使Cat和Dog中的accept的实现看似一样，但却不能将其提到父类中去。
+
+对Animal的使用如下：
+
+~~~cpp
+RunVisitor run;
+CryVisitor cry;
+
+Animal* animals[] = {new Dog, new Cat};
+
+animals[0]->accept(run); // dog run
+animals[1]->accept(cry); // cat cry
+~~~
+
+对Visitor设计模式的使用就介绍到这里，我们来看看Visitor设计模式自身。它的架构是确定的，首先需要有一个继承体系，我们称为被访问体系。Visitor设计模式需要针对被访问体系创建一个访问者体系。访问者体系需要一个接口类，它的所有虚接口模式一致，即针对被访问体系中的每个类型创建visit函数，入参是被访问体系中类型的引用。被访问体系中每个类都有一个实现相同的accept接口，入参是访问者体系的接口类的引用。
+
+可以看到Visitor设计模式具有确定的架构模式，我们能否利用模板元编程来做代码生成，让客户尽量只用实现确定模式之外的定制代码呢？
+
+《Modern C\++ Design》一书中，Andrei Alexandrescu利用TypeList完成了这件事，在此我们来看看他是如何做到的！为了让代码更加的清晰，我对原书的例子和代码进行了改进，所以注意下面所示代码和原书有所出入。
+
+首先：由于被访问体系是已经存在的，所以我们可以让访问者体系根据被访者体系中的类型自动生成其公共接口类。
+
+~~~cpp
+template<typename T>
+struct Visitor
+{
+ virtual void doVisit(T&) = 0;
+ virtual ~Visitor() {}
+};
+
+template<typename TL>
+struct VisitorGenerator : __scatter_inherits(TL, Visitor)
+{
+    template<typename Visited>
+    void visit(Visited& host)
+    {
+        return static_cast<Visitor<Visited>*>(this)->doVisit(host);
+    }
+};
+~~~
+
+这里我们使用了前面介绍过的`__scatter_inherits`，它接收一个TypeList和一个单参模板`Visitor`，返回一个多重继承`Visitor<T>`(T为TypeList中每个元素)后的目标类型VisitorGenerator。我们通过代码生成，让VisitorGenerator中自动有了一系列`virutal void doVisit(T&)`的接口。最后VisitorGenerator自身定义了一个`visit`模板函数，通过入参类型将操作分派给对应父类的`doVisit`函数。
+
+有了VisitorGenerator后，访问者继承体系的接口类后续如下定义：
+
+~~~cpp
+using AnimalVisitor = VisitorGenerator<__type_list(Cat, Dog)>;
+~~~
+
+子类的实现和以前一样，仍然继承AnimalVisitor，只是虚接口的名称需要变为`doVisit`。例如：
+
+~~~cpp
+struct RunVisitor : AnimalVisitor
+{
+private:
+	void doVisit(Cat& cat) override
+    {
+		// implement how cat run here;
+    }
+
+    void doVisit(Dog& dog) override
+    {
+		// implement how dog run here;
+    }
+};
+~~~
+
+最后，为了消除被访问者体系中的重复`accept`函数代码，我们定义一个宏：
+
+~~~cpp
+#define DEFINE_VISITABLE(VISITOR)           \
+void accept(VISITOR& visitor) override      \
+{                                           \
+    visitor.visit(*this);                   \
+}
+~~~
+
+于是Animal继承体系中的子类实现可以简化如下：
+
+~~~cpp
+struct Cat : Animal
+{
+private:
+    DEFINE_VISITABLE(AnimalVisitor);
+};
+
+struct Dog : Animal
+{
+private:
+    DEFINE_VISITABLE(AnimalVisitor);
+};
+~~~
+
+OK，本例到此！上面我们通过代码生成消除了Visitor模式中的形式化代码，让客户可以生成Visitor模式的主框架，尽量只去编写需要自定义的代码。
+
+上面的例子为了简化，假设访问者体系中的`visit`函数的返回值为`void`类型。思考下如果我们希望`visit`接口的返回值类型能够指定，那么该如何修改代码？TLP库中"tlp/samples/visitor"目录中有完整的实现，可以参考。
 
 ### 构建DSL
 
