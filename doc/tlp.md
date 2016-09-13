@@ -3630,7 +3630,7 @@ int main()
 
 上面的代码中，我们把每个事件定义为不同的类型，为了简化只有`Play`事件携带了消息内容。Robot通过函数重载实现了`processEvent`方法，用于处理不同的消息。`reportError`用于在某状态下收到不能处理的消息时调用，它会打印出当前状态以及调用运行时RTTI技术打印出消息类名称。
 
-通过代码可以看到，上面的实现将整个有限状态机的状态关系散落在每个消息处理函数的`if-else`语句中，我们必须通过仔细分析代码逻辑关系才能再还原出状态机的全貌。当状态机的状态或者转换关系发生变化时，我们必须非常小心地审查每个消息处理函数，以保证修改不出错。
+通过代码可以看到，上面的实现将整个有限状态机的状态关系散落在每个消息处理函数的`if-else`语句中，我们必须通过仔细分析代码逻辑关系才能再还原出状态机的全貌。当状态机的状态或者转换关系发生变化时，我们必须非常小心地审查每个消息处理函数，以保证修改不出错。而且当状态和事件变多的时候，每个函数的`if-else`层数将会变得更深。
 
 如果你精通设计模式，可能会采用状态模式改写上面的代码。状态模式为每个状态建立一个子类，将不同状态下的消息处理函数分开。这样当我们增加或修改某一状态的实现细节时就不会干扰到别的状态的实现。状态模式让每个状态的处理内聚在自己的状态类里面，让修改变得隔离，减少了出错的可能。但是状态模式的问题在于将状态拆分到多个类中，导致一个完整的FSM的实现被分割到多处，难以看到一个状态机的全貌。我们必须在多个状态类之间跳转才能搞明白整个FSM的状态关系。而且由于采用了虚函数，这阻止了一定可能上的编译期优化，会造成一定的性能损失。
 
@@ -3712,6 +3712,265 @@ private:
 通过例子可以看到，`TransitionTable`的描述已经非常接近手工描述一张状态表了，我们基本给用户没有带来太多偶发复杂度，更重要的是我们完全通过编译时代码生成技术来实现，没有为用户带来任何运行时效率损失。
 
 接下来我们具体看看`StateMachine`的实现。
+
+~~~cpp
+template<typename Derived>
+struct StateMachine
+{
+    template<typename Event>
+    int processEvent(const Event& e)
+    {
+        using Dispatcher = typename details::DispatcherGenerator<typename Derived::TransitionTable, Event>::Result;
+
+        this->state = Dispatcher::dispatch(*static_cast<Derived*>(this), this->state, e);
+
+        return this->state;
+    }
+
+    template<typename Event>
+    int onUndefined(int state, const Event& e)
+    {
+        std::cout << "Error: no transition on state(" << state 
+                  << ") handle event( " << typeid(e).name() 
+                  << " )" << std::endl;
+        return state;
+    }
+
+protected:
+    template< int CurrentState,
+              typename EventType,
+              int NextState,
+              void (Derived::*action)(const EventType&) >
+    struct Row
+    {
+        enum
+        {
+            current = CurrentState,
+            next = NextState
+        };
+
+        using Fsm = Derived;
+        using Event = EventType;
+
+        static void execute(Fsm& fsm, const Event& e)
+        {
+            (fsm.*action)(e);
+        }
+    };
+
+protected:
+    StateMachine() : state(Derived::initial)
+    {
+    }
+
+private:
+    int state;
+};
+~~~
+
+上面是`StateMachine`的代码实现，不要被这么一大坨代码吓住，我们一步步分析它的实现。
+
+先来看它的构造函数：
+
+~~~cpp
+StateMachine() : state(Derived::initial)
+{
+}
+
+int state;
+~~~
+
+它的内部有一个私有成员state，用来存储当前的状态。它的构造函数就是把state初始化为`Derived::initial`。得益于CRTP模式，我们在父类模板中可以使用子类中的定义。StateMachine要求其子类中必须定义`initial`，用来指明初始状态值。
+
+接来下`onUndefined函数定义了当收到未定义的消息时的默认处理方式。可以在子类中重定义这个方法，如果子类中没有重定义则采用此默认版本。
+
+~~~cpp
+template<typename Event>
+int onUndefined(int state, const Event& e)
+{
+    std::cout << "Error: no transition on state(" << state 
+              << ") handle event( " << typeid(e).name() 
+              << " )" << std::endl;
+    return state;
+}
+~~~
+
+接下来内部的嵌套模板`Row`用于子类在表中定义一行transition用的。它的四个模板参数分别代表当前状态、事件类型、目标状态以及对应action的函数指针。注意由于采用了CRTP模式，这里我们直接使用了子类的类型`Derived`来声明函数指针类型`void (Derived::*action)(const EventType&)`。
+
+~~~cpp
+template< int CurrentState,
+          typename EventType,
+          int NextState,
+          void (Derived::*action)(const EventType&) >
+struct Row
+{
+    enum
+    {
+        current = CurrentState,
+        next = NextState
+    };
+
+    using Fsm = Derived;
+    using Event = EventType;
+
+    static void execute(Fsm& fsm, const Event& e)
+    {
+        (fsm.*action)(e);
+    }
+};
+~~~
+
+上面在`Row`中通过定义`execute`方法，对action的调用进行了封装，统一了所有action的调用形式。原有的每个action名称不同，例如`sayReady`、`sayStoped`...，后续统一可以通过调用`Row::execute`的方式进行使用了。借助封装层来统一不同方法的调用形式是一种非常有用的设计技巧。
+
+最后我们来看`StateMachine`的`processEvent`函数实现。
+
+~~~cpp
+template<typename Event>
+int processEvent(const Event& e)
+{
+    using Dispatcher = typename DispatcherGenerator<typename Derived::TransitionTable, Event>::Result;
+
+    this->state = Dispatcher::dispatch(*static_cast<Derived*>(this), this->state, e);
+
+    return this->state;
+}
+~~~
+
+该函数是一个模板方法，它的入参是待处理的消息，为了支持每种消息，将其类型定义为泛型。为了方便客户获取转换后的目标状态，函数结束时返回最新的状态。我们期望它对于任一种合法的入参消息类型，可以自动生成它的处理逻辑。
+
+例如对于DanceRobot的Close消息，我们希望它可以自动生成如下代码：
+
+~~~cpp
+int processEvent(const Close& event)
+{
+    if(state == opened)
+    {
+        sayClosed(event);
+        state = closed;
+    }
+    else if(state == dancing)
+    {
+        sayClosed(event);
+        state = closed;
+    }
+    else
+    {
+        reportError(event);
+    }
+
+    return this->state;
+}
+~~~
+
+而这所有神奇的事情，都是通过如下两句代码完成的：
+
+~~~cpp
+using Dispatcher = typename DispatcherGenerator<typename Derived::TransitionTable, Event>::Result;
+
+this->state = Dispatcher::dispatch(*static_cast<Derived*>(this), this->state, e);
+~~~
+
+上面第一句，我们通过把状态表`Derived::TransitionTable`和当前事件类型交给`DispatcherGenerator`，通过它得到了`Dispatcher`类型。从第二句中我们知道`Dispatcher`类型必须有一个静态方法`dispatch`，它能够接收当前状态和事件对象完成所有的逻辑处理。
+
+所以一切的关键都在于`DispatcherGenerator<typename Derived::TransitionTable, Event>::Result`所做的类型生成。它能够根据状态转化表以及当前类型，生成正确的处理逻辑。那么`DispatcherGenerator`怎么实现呢？
+
+我们再来看看如下DanceRobot的Close消息处理函数的实现：
+
+~~~cpp
+if(state == opened)
+{
+    sayClosed(event);
+    state = closed;
+}
+else if(state == dancing)
+{
+    sayClosed(event);
+    state = closed;
+}
+else
+{
+    reportError(event);
+}
+~~~
+
+我们发现，它的实现是形式化的。就是根据当前消息类型`Close`，在状态转换表`Derived::TransitionTable`中找到所有可以处理它的行：
+
+~~~cpp
+//  +----------+----------+----------+----------------+
+//  |  current |   event  |  target  |  action        |
+//  +----------+----------+----------+----------------+
+Row <  opened  ,   Close  ,  closed  ,  &R::sayClosed >,
+Row <  dancing ,   Close  ,  closed  ,  &R::sayClosed >
+~~~
+
+TypeList已经有`__filter`元函数，它根据一个指定的规则，将TypeList中所有满足条件的元素过滤出来，返回由所有满足条件的元素组成的TypeList。接下来要做的是用过滤出来的行，递归地完成如下模式的`if-else`结构：
+
+~~~cpp
+template<typename Transition, typename Next>
+struct EventDispatcher
+{
+    using Fsm = typename Transition::Fsm;
+    using Event = typename Transition::Event;
+
+    static int dispatch(Fsm& fsm, int state, const Event& e)
+    {
+        if(state == Transition::current)
+        {
+            Transition::execute(fsm, e);
+            return Transition::next;
+        }
+        else
+        {
+            return Next::dispatch(fsm, state, e);
+        }
+    }
+};
+~~~
+
+最后的一个`else`中调用未定义消息的处理函数：
+
+~~~cpp
+struct DefaultDispatcher
+{
+    template<typename Fsm, typename Event>
+    static int dispatch(Fsm& fsm, int state, const Event& e)
+    {
+        return fsm.onUndefined(state, e);
+    }
+};
+~~~
+
+到此，基本的思路清楚了，我们把上述生成`processEvent`函数的这一切串起来。
+
+~~~cpp
+template<typename Event, typename Transition>
+struct EventMatcher
+{
+    using Result = __is_eq(Event, typename Transition::Event);
+};
+
+template<typename Table, typename Event>
+struct DispatcherGenerator
+{
+private:
+    template<typename Transition>
+    using TransitionMatcher = typename EventMatcher<Event, Transition>::Result;
+
+    using MatchedTransitions = __filter(Table, TransitionMatcher);
+
+public:
+    using Result = __fold(MatchedTransitions, DefaultDispatcher, EventDispatcher);
+};
+~~~
+
+上面我们首先使用`__filter(Table, TransitionMatcher)`在表中过滤出满足条件的所有transition，将过滤出来的TypeList交给`MatchedTransitions`保存。`TransitionMatcher`是过滤条件，它调用了`EventMatcher`去匹配和`DispatcherGenerator`入参中`Event`相同的`Transition::Event`。
+
+最后，我们对过滤出来的列表`MatchedTransitions`调用`__fold`元函数，将其中每个transition按照`EventDispatcher`的模式去递归折叠，折叠的默认参数为`DefaultDispatcher`。如此我们按照过滤出来的表行，自动生成了递归的`if-else`结构，该结构存在于返回值类型的静态函数`dispatch`中。
+
+这就是整个DSL背后的代码，该代码的核心在于利用模板元编程递归地生成了每种消息处理函数中形式化的`if-else`嵌套代码结构。由于模板元编程的所有计算在编译期，模板中出现的封装函数在编译期都可以被内联，所以最终生成的二进制代码和最开始我们手写的是基本一致的。
+
+如果对本例的完整代码该兴趣，可以查看TLP库中的源码，位置在"tlp/sample/fsm"中。
+
 
 ## 总结
 

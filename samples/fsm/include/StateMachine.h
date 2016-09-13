@@ -80,7 +80,8 @@ namespace fsm
         template<typename Event>
         int onUndefined(int state, const Event& e)
         {
-            return static_cast<Derived*>(this)->noTransition(state, e);
+            std::cout << "Error: no transition on state(" << state << ") handle event( " << typeid(e).name() << " )" << std::endl;
+            return state;
         }
 
     protected:
@@ -104,13 +105,6 @@ namespace fsm
                 (fsm.*action)(e);
             }
         };
-
-        template<typename Event>
-        int noTransition(int state, const Event& e)
-        {
-            std::cout << "Error: no transition on state(" << state << ") handle event( " << typeid(e).name() << " )" << std::endl;
-            return state;
-        }
 
     protected:
         StateMachine() : state(Derived::initial)
