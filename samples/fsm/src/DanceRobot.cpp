@@ -171,17 +171,17 @@ namespace DslImplementation
         using R = DanceRobot;
 
         using TransitionTable = __type_list(
-                //  +-----------+---------------+-----------+-------------------+
-                //  |   current |   event       |   target  |   action          |
-                //  +-----------+---------------+-----------+-------------------+
-                Row <   closed  ,   Open        ,   opened  ,   &R::sayReady    >,
-                //  +-----------+---------------+-----------+-------------------+
-                Row <   opened  ,   Close       ,   closed  ,   &R::sayClosed   >,
-                Row <   opened  ,   Play        ,   dancing ,   &R::doDance     >,
-                //  +-----------+---------------+-----------+-------------------+
-                Row <   dancing ,   Stop        ,   opened  ,   &R::sayStoped   >,
-                Row <   dancing ,   Close       ,   closed  ,   &R::sayClosed   >
-                //  +-----------+---------------+-----------+-------------------+
+                //  +----------+----------+----------+----------------+
+                //  |  current |   event  |  target  |  action        |
+                //  +----------+----------+----------+----------------+
+                Row <  closed  ,   Open   ,  opened  ,  &R::sayReady  >,
+                //  +----------+----------+----------+----------------+
+                Row <  opened  ,   Close  ,  closed  ,  &R::sayClosed >,
+                Row <  opened  ,   Play   ,  dancing ,  &R::doDance   >,
+                //  +----------+----------+----------+----------------+
+                Row <  dancing ,   Stop   ,  opened  ,  &R::sayStoped >,
+                Row <  dancing ,   Close  ,  closed  ,  &R::sayClosed >
+                //  +----------+----------+----------+----------------+
         );
     };
 }

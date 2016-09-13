@@ -3610,6 +3610,24 @@ private:
 };
 ~~~
 
+~~~cpp
+int main()
+{
+    DanceRobot robot;
+
+    robot.processEvent(Open());
+    robot.processEvent(Close());
+    robot.processEvent(Open());
+    robot.processEvent(Play{.name = "hip-hop"});
+    robot.processEvent(Stop());
+    robot.processEvent(Close());
+
+    robot.processEvent(Stop()); // Invoke error
+
+	return 0;
+}
+~~~
+
 上面的代码中，我们把每个事件定义为不同的类型，为了简化只有`Play`事件携带了消息内容。Robot通过函数重载实现了`processEvent`方法，用于处理不同的消息。`reportError`用于在某状态下收到不能处理的消息时调用，它会打印出当前状态以及调用运行时RTTI技术打印出消息类名称。
 
 通过代码可以看到，上面的实现将整个有限状态机的状态关系散落在每个消息处理函数的`if-else`语句中，我们必须通过仔细分析代码逻辑关系才能再还原出状态机的全貌。当状态机的状态或者转换关系发生变化时，我们必须非常小心地审查每个消息处理函数，以保证修改不出错。
@@ -3618,7 +3636,82 @@ private:
 
 有经验的C程序员说可以采用表驱动法来实现，这样就可以避免那么多的`if-else`或者子类。表可以将状态机的关系内聚在一起，从而展示整个FSM的全貌。表是用代码表示FSM非常好的一个工具，可惜C语言的表驱动需要借助函数指针，它和虚函数本质上一样，都会导致编译器放弃很多优化，性能都没有第一种实现高。
 
-那么有没有一种方法，让我们可以以表来表示整个FSM，但是运行时效率又能和第一种实现相当？前面我们说了，可以利用模板元编程的代码生成能力。我们利用模板元编程创建一种描述FSM的DSL，让用户可以以表的形式描述一个FSM，然后在C\++编译期将其生成类似第一种实现的代码。这样我们即得到了吻合与领域的表达力，又没有造成任何运行时的性能损失！
+那么有没有一种方法，让我们可以以表来表示整个FSM，但是运行时效率又能和第一种实现相当？前面我们说了，可以利用模板元编程的代码生成能力。我们利用模板元编程创建一种描述FSM的DSL，让用户可以以表的形式描述一个FSM，然后在C\++编译期将其生成类似第一种实现的代码。这样我们即得到了吻合于领域的表达力，又没有造成任何运行时的性能损失！
+
+接下来我们看看如何实现。
+
+既然提到了使用表来表达，那么我们已经有了一种熟识的编译期表数据结构了，没错，就是TypeList。TypeList的每个元素表示一个转换（transition），它应该是一个类型。按照前面给出的DanceRobot的表格表示，每行应该可以让用户定义：当前状态，事件，目标状态，以及对应的action。所以我们定义一个模板Row，它的参数是：`int CurrentState, typename EventType, int NextState, void(Fsm::*action)(const EventType&)`，一旦它具现化后将表示一个transition，作为状态转换表的一行。
+
+除了表之外，用户还应该负责给出表中元素的定义，包括每个状态、事件和action的定义。我们希望整个DSL框架和用户的代码分离开，用户在自己的类中定义state，event，action以及转换表，然后DSL框架负责为用户生成所有的事件处理函数`processEvent`。
+
+有了上面的思考后，我们通过DanceRobot展示我们构思的DSL的用法：
+
+~~~cpp
+// Events
+struct Close {};
+struct Open {};
+struct Play
+{
+    std::string name;
+};
+struct Stop {};
+
+// FSM
+struct DanceRobot : fsm::StateMachine<DanceRobot>
+{
+private:
+    friend struct StateMachine<DanceRobot>;
+
+    enum States
+    {
+        closed, opened, dancing, initial = closed
+    };
+
+    // actions
+    void sayReady(const Open&)
+    {
+        std::cout << "Robot is ready for play!" << std::endl;
+    }
+
+    void sayClosed(const Close&)
+    {
+        std::cout << "Robot is closed!" << std::endl;
+    }
+
+    void sayStoped(const Stop&)
+    {
+        std::cout << "Robot stops playing!" << std::endl;
+    }
+
+    void doDance(const Play& playInfo)
+    {
+        std::cout << "Robot is dancing (" << playInfo.name << ") now!" << std::endl;
+    }
+
+    // table
+    using R = DanceRobot;
+
+    using TransitionTable = __type_list(
+        //  +----------+----------+----------+----------------+
+        //  |  current |   event  |  target  |  action        |
+        //  +----------+----------+----------+----------------+
+        Row <  closed  ,   Open   ,  opened  ,  &R::sayReady  >,
+        //  +----------+----------+----------+----------------+
+        Row <  opened  ,   Close  ,  closed  ,  &R::sayClosed >,
+        Row <  opened  ,   Play   ,  dancing ,  &R::doDance   >,
+        //  +----------+----------+----------+----------------+
+        Row <  dancing ,   Stop   ,  opened  ,  &R::sayStoped >,
+        Row <  dancing ,   Close  ,  closed  ,  &R::sayClosed >
+        //  +----------+----------+----------+----------------+
+	);
+};
+~~~
+
+如上，我们希望客户只用定义好Event，State，Action以及按照DSL的语法定义TransitionTable。最终所有消息处理函数的生成全部交给DSL背后的`fsm::StateMachine`框架，它负责根据`TransitionTable`生成所有类似前面第一种实现中的`processEvent`函数，并且要求性能和它相当。`fsm::StateMachine`框架是和用户代码解耦的，它独立可复用的，用户类通过我们之前介绍过的CRTP技术和它进行组合。
+
+通过例子可以看到，`TransitionTable`的描述已经非常接近手工描述一张状态表了，我们基本给用户没有带来太多偶发复杂度，更重要的是我们完全通过编译时代码生成技术来实现，没有为用户带来任何运行时效率损失。
+
+接下来我们具体看看`StateMachine`的实现。
 
 ## 总结
 
