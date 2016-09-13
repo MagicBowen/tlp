@@ -122,7 +122,7 @@ namespace NormalImplementation
         void reportError(Event& event)
         {
             std::cout << "Error: robot on state(" << state
-                      << ") handle event( " << typeid(event).name() << " )" << std::endl;
+                      << ") receives unknown event( " << typeid(event).name() << " )" << std::endl;
         }
 
     private:

@@ -3464,7 +3464,7 @@ OK，本例到此！上面我们通过代码生成消除了Visitor模式中的�
 C\++是一门非常适合用来构建DSL(Domain Special Language)的语言，它的多范式特点为它提供了丰富的工具，尤其是C\++提供了：
 
 - 一个静态类型系统；
-- 近似于零抽象惩罚的能力；
+- 近似于零抽象惩罚的能力（强大的优化器）；
 - 预处理宏，能够以文本替换的方式操纵源代码；
 - 一套丰富的内建符号运算符，它们可以被重载，且对重载的语义几乎没有任何限制；
 - 一套图灵完备的模板计算系统（模板元编程），可以用于：
@@ -3474,7 +3474,151 @@ C\++是一门非常适合用来构建DSL(Domain Special Language)的语言，它
 
 结合这些武器，使得通过C\++构建兼顾语法表达力及运行时效率的DSL成为了可能。可以说，模板元编程是上述所有武器中最为重要的，接下来我们使用模板元编程设计一个DSL用于描述有限状态机(FSM)。该设计最初来自于《C\++模板元编程》一书，由于作者在书中所举状态机的例子比较晦涩，而且实现使用了更晦涩的boost mpl库，为了让这个设计更加易懂并且代码更加清晰，我对例子和代码进行了重新设计。
 
+有限状态机(FSM)是计算机编程中非常有用的工具，它通过抽象将紊乱的程序逻辑转换成更易于理解的形式化的表达形式。
 
+有限状态机的领域模型由三个简单的元素构成：
+
+- 状态（state）：FSM某一时刻总是处于一个状态中，不同状态决定了FSM可响应的事件类型，以及响应的方式。
+
+- 事件（event）：事件触发FSM状态的改变。事件可以携带具体信息。
+- 转换（transition）：一个转换标记了在某个事件的激励下FSM从一个状态到另一个状态的跃迁。通常转换还会有一个关联动作（action），表示在状态跃迁时进行的操作。将所有的转换放在一起可以构成一个状态转换表（State Transition Table，STT）。
+
+我们假设有一个跳舞机器人，它的状态转换关系如下图：
+
+![](./pics/robot.png)
+
+图可能是最直观的表示FSM的工具了，但是如果图中出现太多的细节元素就会导致很凌乱，例如上图为了简洁就没有标示每个转换对应的action。为了让FSM的表示更加形式化，我们将其装换成如下表格的形式：
+
+| Current State | Event |  Next State  |   Action  |
+|---------------|-------|--------------|-----------|
+|  closed       | open  |    opened    | sayReady  |
+|  opened       | close |    closed    | sayClosed |
+|  opened       | play  |    dancing   | doDance   |
+|  dancing      | stop  |    opened    | sayStoped |
+|  dancing      | close |    closed    | sayClosed |
+
+如上，对于跳舞机器人，它有三种状态：closed，opened，dancing；它可以接收四种事件：close，open，play，stop；它有四个action：sayReady，sayClosed，doDance，sayStoped。上表中的每一行表示了一种可以进行的转换关系。可见表格是一种形式化的，且易扩展的表示FSM的工具。
+
+对于这样一个由FSM表示的跳舞机器人，最常见的实现如下：
+
+~~~cpp
+// Events
+struct Close {};
+struct Open {};
+struct Play
+{
+    std::string name;
+};
+struct Stop {};
+
+// FSM
+struct DanceRobot
+{
+    void processEvent(const Open& event)
+    {
+        if(state == closed)
+        {
+            sayReady(event);
+            state = opened;
+        }
+        else
+        {
+            reportError(event);
+        }
+    }
+
+    void processEvent(const Close& event)
+    {
+        if(state == opened)
+        {
+            sayClosed(event);
+            state = closed;
+        }
+        else if(state == dancing)
+        {
+            sayClosed(event);
+            state = closed;
+        }
+        else
+        {
+            reportError(event);
+        }
+    }
+
+    void processEvent(const Play& event)
+    {
+        if(state == opened)
+        {
+            doDance(event);
+            state = dancing;
+        }
+        else
+        {
+            reportError(event);
+        }
+    }
+
+    void processEvent(const Stop& event)
+    {
+        if(state == dancing)
+        {
+            sayStoped(event);
+            state = opened;
+        }
+        else
+        {
+            reportError(event);
+        }
+    }
+
+private:
+    // actions
+    void sayReady(const Open&)
+    {
+        std::cout << "Robot is ready for play!" << std::endl;
+    }
+
+    void sayClosed(const Close&)
+    {
+        std::cout << "Robot is closed!" << std::endl;
+    }
+
+    void sayStoped(const Stop&)
+    {
+        std::cout << "Robot stops playing!" << std::endl;
+    }
+
+    void doDance(const Play& playInfo)
+    {
+        std::cout << "Robot is dancing (" << playInfo.name << ") now!" << std::endl;
+    }
+
+    template<typename Event>
+    void reportError(Event& event)
+    {
+        std::cout << "Error: robot on state(" << state
+                  << ") receives unknown event( " 
+                  << typeid(event).name() << " )" << std::endl;
+    }
+
+private:
+    enum
+    {
+        closed, opened, dancing, initial = closed
+
+    }state{initial};
+};
+~~~
+
+上面的代码中，我们把每个事件定义为不同的类型，为了简化只有`Play`事件携带了消息内容。Robot通过函数重载实现了`processEvent`方法，用于处理不同的消息。`reportError`用于在某状态下收到不能处理的消息时调用，它会打印出当前状态以及调用运行时RTTI技术打印出消息类名称。
+
+通过代码可以看到，上面的实现将整个有限状态机的状态关系散落在每个消息处理函数的`if-else`语句中，我们必须通过仔细分析代码逻辑关系才能再还原出状态机的全貌。当状态机的状态或者转换关系发生变化时，我们必须非常小心地审查每个消息处理函数，以保证修改不出错。
+
+如果你精通设计模式，可能会采用状态模式改写上面的代码。状态模式为每个状态建立一个子类，将不同状态下的消息处理函数分开。这样当我们增加或修改某一状态的实现细节时就不会干扰到别的状态的实现。状态模式让每个状态的处理内聚在自己的状态类里面，让修改变得隔离，减少了出错的可能。但是状态模式的问题在于将状态拆分到多个类中，导致一个完整的FSM的实现被分割到多处，难以看到一个状态机的全貌。我们必须在多个状态类之间跳转才能搞明白整个FSM的状态关系。而且由于采用了虚函数，这阻止了一定可能上的编译期优化，会造成一定的性能损失。
+
+有经验的C程序员说可以采用表驱动法来实现，这样就可以避免那么多的`if-else`或者子类。表可以将状态机的关系内聚在一起，从而展示整个FSM的全貌。表是用代码表示FSM非常好的一个工具，可惜C语言的表驱动需要借助函数指针，它和虚函数本质上一样，都会导致编译器放弃很多优化，性能都没有第一种实现高。
+
+那么有没有一种方法，让我们可以以表来表示整个FSM，但是运行时效率又能和第一种实现相当？前面我们说了，可以利用模板元编程的代码生成能力。我们利用模板元编程创建一种描述FSM的DSL，让用户可以以表的形式描述一个FSM，然后在C\++编译期将其生成类似第一种实现的代码。这样我们即得到了吻合与领域的表达力，又没有造成任何运行时的性能损失！
 
 ## 总结
 
