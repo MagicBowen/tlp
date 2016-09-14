@@ -3489,7 +3489,7 @@ C\++是一门非常适合用来构建DSL(Domain Special Language)的语言，它
 
 ![](./pics/robot.png)
 
-图可能是最直观的表示FSM的工具了，但是如果图中出现太多的细节元素就会导致很凌乱，例如上图为了简洁就没有标示每个转换对应的action。为了让FSM的表示更加形式化，我们将其装换成如下表格的形式：
+图可能是表示FSM最直观的工具了，但是如果图中出现太多的细节就会导致很凌乱，例如上图为了简洁就没有标示每个转换对应的action。为了让FSM的表示更加形式化，我们将其装换成如下表格的形式：
 
 | Current State | Event |  Next State  |   Action  |
 |---------------|-------|--------------|-----------|
@@ -3499,7 +3499,7 @@ C\++是一门非常适合用来构建DSL(Domain Special Language)的语言，它
 |  dancing      | stop  |    opened    | sayStoped |
 |  dancing      | close |    closed    | sayClosed |
 
-如上，对于跳舞机器人，它有三种状态：closed，opened，dancing；它可以接收四种事件：close，open，play，stop；它有四个action：sayReady，sayClosed，doDance，sayStoped。上表中的每一行表示了一种可以进行的转换关系。可见表格是一种形式化的，且易扩展的表示FSM的工具。
+如上，对于跳舞机器人，它有三种状态：closed，opened，dancing；它可以接收四种事件：close，open，play，stop；它有四个action：sayReady，sayClosed，doDance，sayStoped。上表中的每一行表示了一种可以进行的转换关系。用表格来表示FSM同样易于理解，而且这种表示是相对形式化的，且容易通过代码来描述。
 
 对于这样一个由FSM表示的跳舞机器人，最常见的实现如下：
 
